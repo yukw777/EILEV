@@ -15,7 +15,7 @@ from video_blip.data.utils import (
     clean_narration_text,
     generate_input_ids_and_labels,
 )
-from video_blip.model import VideoBlipForConditionalGeneration
+from video_blip.model.v1 import VideoBlipForConditionalGeneration
 
 PROMPT = "Question: What is the camera wearer doing? Answer:"
 

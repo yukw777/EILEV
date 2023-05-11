@@ -4,7 +4,7 @@ import pytest
 import torch
 from transformers import BatchEncoding, Blip2VisionConfig
 
-from video_blip.model import VideoBlipVisionModel, process
+from video_blip.model.v1 import VideoBlipVisionModel, process
 
 
 @pytest.mark.parametrize("output_hidden_states", [True, False])
@@ -32,7 +32,7 @@ from video_blip.model import VideoBlipVisionModel, process
         ),
     ],
 )
-def test_video_blip_vision_model_forward(
+def test_v1_video_blip_vision_model_forward(
     config: Blip2VisionConfig,
     batch: int,
     time: int,

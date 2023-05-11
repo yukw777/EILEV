@@ -8,7 +8,7 @@ import torch
 from pytorchvideo.data.video import VideoPathHandler
 from transformers import Blip2Processor
 
-from video_blip.model import VideoBlipForConditionalGeneration, process
+from video_blip.model.v1 import VideoBlipForConditionalGeneration, process
 
 
 @torch.no_grad()
