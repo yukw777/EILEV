@@ -1,4 +1,6 @@
 import re
+from collections.abc import Iterable
+from typing import TypeVar
 
 import torch
 from transformers import BatchEncoding, DataCollatorForSeq2Seq, PreTrainedTokenizer
@@ -70,3 +72,11 @@ def generate_input_ids_and_labels(
         )
 
     return preprocessed
+
+
+T = TypeVar("T")
+
+
+def generate_chunks(list_to_chunk: list[T], chunk_size: int) -> Iterable[list[T]]:
+    for i in range(0, len(list_to_chunk), chunk_size):
+        yield list_to_chunk[i : i + chunk_size]
