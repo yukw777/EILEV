@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from video_blip.data.ego4d import Ego4dFHOMainDataset
+from video_blip.data.utils import C_REGEX
 
 parser = argparse.ArgumentParser()
 parser.add_argument("fho_main_path")
@@ -36,7 +36,7 @@ for video_uid, video in tqdm(video_dict.items(), desc="filtering videos"):
         for action in interval["narrated_actions"]
         if not action["is_rejected"]
         and action["is_valid_action"]
-        and Ego4dFHOMainDataset.C_REGEX.match(action["narration_text"])
+        and C_REGEX.match(action["narration_text"])
     ]
     if len(video["narrated_actions"]) == 0:
         videos_to_delete.append(video_uid)

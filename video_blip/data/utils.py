@@ -5,7 +5,7 @@ from typing import TypeVar
 import torch
 from transformers import BatchEncoding, DataCollatorForSeq2Seq, PreTrainedTokenizer
 
-from video_blip.data.ego4d import Ego4dFHOMainDataset
+C_REGEX = re.compile(r"^\#C C", re.IGNORECASE)
 
 
 class DataCollatorForVideoSeq2Seq(DataCollatorForSeq2Seq):
@@ -23,7 +23,7 @@ def clean_narration_text(narration_text: str) -> str:
     cleaned = narration_text.strip()
 
     # replace "#C C" with "The camera wearer"
-    return re.sub(Ego4dFHOMainDataset.C_REGEX, "The camera wearer", cleaned)
+    return re.sub(C_REGEX, "The camera wearer", cleaned)
 
 
 def generate_input_ids_and_labels(

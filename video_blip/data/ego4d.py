@@ -1,7 +1,6 @@
 import json
 import os
 import random
-import re
 from collections.abc import Callable
 from csv import DictReader
 from fractions import Fraction
@@ -11,6 +10,8 @@ from pytorchvideo.data import ClipSampler, LabeledVideoDataset
 from pytorchvideo.data.clip_sampling import ClipInfo
 from pytorchvideo.data.video import VideoPathHandler
 from torch.utils.data import Dataset
+
+from video_blip.data.utils import C_REGEX
 
 
 class NarratedActionClipSampler(ClipSampler):
@@ -87,8 +88,6 @@ class NarratedActionClipSampler(ClipSampler):
 
 
 class Ego4dFHOMainDataset(LabeledVideoDataset):
-    C_REGEX = re.compile(r"^\#C C", re.IGNORECASE)
-
     def __init__(
         self,
         annotation_path: str,
@@ -141,7 +140,7 @@ class Ego4dFHOMainDataset(LabeledVideoDataset):
                             for action in interval["narrated_actions"]
                             if not action["is_rejected"]
                             and action["is_valid_action"]
-                            and self.C_REGEX.match(action["narration_text"])
+                            and C_REGEX.match(action["narration_text"])
                         ],
                         "video_uid": video_uid,
                         "video_metadata": video_dict[video_uid]["video_metadata"],
