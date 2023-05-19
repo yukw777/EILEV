@@ -195,3 +195,27 @@ class Ego4dFHOMainFrameDataset(Dataset[dict[str, Any]]):
 
     def __len__(self) -> int:
         return len(self.data)
+
+
+class Ego4dFHOMainFrameInterleavedDataset(Ego4dFHOMainFrameDataset):
+    def __init__(
+        self,
+        narrated_actions_dir: str,
+        num_videos_per_sample: int = 5,
+        transform: Callable[[dict], Any] | None = None,
+    ) -> None:
+        super().__init__(narrated_actions_dir, transform=transform)
+        self.num_videos_per_sample = num_videos_per_sample
+
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        others = random.sample(
+            [i for i in range(len(self)) if i != index], self.num_videos_per_sample - 1
+        )
+        return {
+            "items": [
+                # NOTE: need to use the two-arg form of super() as list comprehensions
+                # create their own scopes.
+                super(Ego4dFHOMainFrameInterleavedDataset, self).__getitem__(i)
+                for i in others + [index]
+            ]
+        }
