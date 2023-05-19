@@ -1,10 +1,11 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 import torch
 from transformers import BatchEncoding
 
 from video_blip.data.utils import (
+    DataCollatorForInterleavedVideoSeq2Seq,
     clean_narration_text,
     generate_input_ids_and_labels,
     generate_input_ids_and_labels_from_interleaved,
@@ -520,3 +521,89 @@ def test_generate_input_ids_and_labels_from_interleaved(
     assert results["input_ids"].equal(expected["input_ids"])
     assert results["labels"].equal(expected["labels"])
     assert results["video_causal_mask"].equal(expected["video_causal_mask"])
+
+
+@pytest.mark.parametrize(
+    "datapoints,expected",
+    [
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
+        ),
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0],
+                            [1, 0, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 0, 1],
+                            [0, 0, 1],
+                        ]
+                    ),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 1],
+                        ]
+                    ),
+                },
+            ],
+            torch.tensor(
+                [
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 1, 0],
+                    ],
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 1],
+                        [0, 0, 0, 0],
+                    ],
+                ]
+            ),
+        ),
+    ],
+)
+def test_data_collator_for_interleaved_video_seq2seq(datapoints, expected):
+    with patch(
+        "video_blip.data.utils.DataCollatorForVideoSeq2Seq.__call__",
+        return_value=BatchEncoding(),
+    ):
+        collator = DataCollatorForInterleavedVideoSeq2Seq(Mock())
+        collated = collator(datapoints)
+        assert collated["video_causal_mask"].equal(expected)

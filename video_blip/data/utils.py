@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from typing import TypeVar
 
 import torch
+import torch.nn.functional as F
 from transformers import BatchEncoding, DataCollatorForSeq2Seq, PreTrainedTokenizer
 
 C_REGEX = re.compile(r"^\#C C", re.IGNORECASE)
@@ -15,6 +16,32 @@ class DataCollatorForVideoSeq2Seq(DataCollatorForSeq2Seq):
         )
         collated = super().__call__(features, return_tensors=return_tensors)
         collated["pixel_values"] = pixel_values
+        return collated
+
+
+class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForVideoSeq2Seq):
+    def __call__(self, features, return_tensors=None):
+        video_causal_mask_list = [
+            feature.pop("video_causal_mask") for feature in features
+        ]
+        max_text_token_len = max(mask.size(0) for mask in video_causal_mask_list)
+        max_video_token_len = max(mask.size(1) for mask in video_causal_mask_list)
+        video_causal_mask = torch.stack(
+            [
+                F.pad(
+                    mask,
+                    (
+                        0,
+                        max_video_token_len - mask.size(1),
+                        0,
+                        max_text_token_len - mask.size(0),
+                    ),
+                )
+                for mask in video_causal_mask_list
+            ]
+        )
+        collated = super().__call__(features, return_tensors=return_tensors)
+        collated["video_causal_mask"] = video_causal_mask
         return collated
 
 
