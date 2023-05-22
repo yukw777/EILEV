@@ -1,12 +1,14 @@
 import pytest
 import torch
-from transformers import Blip2Config, Blip2VisionConfig, OPTConfig
+from transformers import Blip2Config, Blip2VisionConfig, OPTConfig, T5Config
 
 from video_blip.model.v2 import (
     VideoBlipForConditionalGeneration,
     VideoBlipVisionModel,
     VideoOPTDecoder,
     VideoOPTForCausalLM,
+    VideoT5ForConditionalGeneration,
+    _make_video_causal_encoder_attn_mask,
     _make_video_causal_mask,
 )
 
@@ -484,30 +486,31 @@ def test_v2_video_blip_vision_model_forward(
         ),
         Blip2Config(
             vision_config={
-                "hidden_size": 16,
-                "intermediate_size": 32,
-                "projection_dim": 8,
-                "num_hidden_layers": 4,
-                "num_attention_heads": 8,
-                "patch_size": 12,
+                "hidden_size": 8,
+                "intermediate_size": 16,
+                "projection_dim": 4,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 4,
+                "patch_size": 8,
             },
             qformer_config={
-                "hidden_size": 16,
-                "num_hidden_layers": 4,
-                "num_attention_heads": 4,
-                "intermediate_size": 32,
-                "encoder_hidden_size": 16,
+                "hidden_size": 8,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 2,
+                "intermediate_size": 16,
+                "encoder_hidden_size": 8,
             },
             text_config={
-                "model_type": "opt",
-                "hidden_size": 16,
-                "num_hidden_layers": 4,
-                "ffn_dim": 32,
-                "num_attention_heads": 4,
+                "model_type": "t5",
+                "d_model": 8,
+                "d_kv": 4,
+                "d_ff": 16,
+                "num_layers": 2,
+                "num_heads": 2,
+                "decoder_start_token_id": 0,
             },
-            num_query_tokens=8,
+            num_query_tokens=4,
         ),
-        # TODO: Add configs with text model type "t5"
     ],
 )
 def test_v2_video_blip_for_cond_gen(
@@ -630,29 +633,31 @@ def test_v2_video_blip_for_cond_gen(
         ),
         Blip2Config(
             vision_config={
-                "hidden_size": 16,
-                "intermediate_size": 32,
-                "projection_dim": 8,
-                "num_hidden_layers": 4,
-                "num_attention_heads": 8,
-                "patch_size": 12,
+                "hidden_size": 8,
+                "intermediate_size": 16,
+                "projection_dim": 4,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 4,
+                "patch_size": 8,
             },
             qformer_config={
-                "hidden_size": 16,
-                "num_hidden_layers": 4,
-                "num_attention_heads": 4,
-                "intermediate_size": 32,
-                "encoder_hidden_size": 16,
+                "hidden_size": 8,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 2,
+                "intermediate_size": 16,
+                "encoder_hidden_size": 8,
             },
             text_config={
-                "hidden_size": 16,
-                "num_hidden_layers": 4,
-                "ffn_dim": 32,
-                "num_attention_heads": 4,
+                "model_type": "t5",
+                "d_model": 8,
+                "d_kv": 4,
+                "d_ff": 16,
+                "num_layers": 2,
+                "num_heads": 2,
+                "decoder_start_token_id": 0,
             },
-            num_query_tokens=8,
+            num_query_tokens=4,
         ),
-        # TODO: Add configs with text model type "t5"
     ],
 )
 def test_v2_video_blip_for_cond_gen_generate(
@@ -677,3 +682,144 @@ def test_v2_video_blip_for_cond_gen_generate(
         **generate_kwargs
     )
     assert generated_ids.size() == (batch, max_length)
+
+
+@pytest.mark.parametrize(
+    "video_causal_mask,encoder_attention_mask,expected",
+    [
+        (None, None, None),
+        (None, torch.ones(2, 8).long(), torch.ones(2, 8).long()),
+        (
+            torch.tensor([[[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 1, 1]]]),
+            torch.ones(1, 7).long(),
+            torch.tensor([[0, 0, 1, 1, 1, 1, 1]]),
+        ),
+        (
+            torch.tensor(
+                [
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            torch.tensor(
+                [
+                    [0, 0, 1, 1, 0, 0] + [1] * 3 + [0] * 2,
+                    [0, 0, 0, 0, 1, 1] + [1] * 5,
+                    [1, 1, 0, 0, 0, 0] + [1] * 2 + [0] * 3,
+                ]
+            ),
+        ),
+    ],
+)
+def test_make_video_causal_encoder_attn_mask(
+    video_causal_mask, encoder_attention_mask, expected
+):
+    mask = _make_video_causal_encoder_attn_mask(
+        video_causal_mask, encoder_attention_mask
+    )
+    if expected is None:
+        assert mask is None
+    else:
+        assert mask.equal(expected)
+
+
+@pytest.mark.parametrize("output_hidden_states", [True, False])
+@pytest.mark.parametrize("output_attentions", [True, False])
+@pytest.mark.parametrize("video_seq_len", [1, 8])
+@pytest.mark.parametrize("text_seq_len", [1, 5])
+@pytest.mark.parametrize("batch", [1, 4])
+@pytest.mark.parametrize(
+    "config",
+    [
+        T5Config(
+            d_model=8,
+            d_kv=4,
+            d_ff=16,
+            num_layers=2,
+            num_heads=2,
+            decoder_start_token_id=0,
+        ),
+        T5Config(
+            d_model=16,
+            d_kv=8,
+            d_ff=32,
+            num_layers=4,
+            num_heads=4,
+            decoder_start_token_id=0,
+        ),
+    ],
+)
+def test_v2_video_t5_for_cond_gen_forward(
+    config: T5Config,
+    batch: int,
+    text_seq_len: int,
+    video_seq_len: int,
+    output_attentions: bool,
+    output_hidden_states: bool,
+) -> None:
+    model = VideoT5ForConditionalGeneration(config)
+    outputs = model(
+        input_ids=torch.ones(batch, video_seq_len + text_seq_len).long(),
+        attention_mask=torch.ones(batch, video_seq_len + text_seq_len).long(),
+        video_causal_mask=torch.ones(batch, text_seq_len, video_seq_len).long(),
+        labels=torch.ones(batch, video_seq_len + text_seq_len).long(),
+        output_attentions=output_attentions,
+        output_hidden_states=output_hidden_states,
+        return_dict=True,
+    )
+    assert outputs.loss.size() == tuple()
+    seq_len = text_seq_len + video_seq_len
+    assert outputs.logits.size() == (batch, seq_len, config.vocab_size)
+    assert len(outputs.past_key_values) == config.num_hidden_layers
+    for tensors in outputs.past_key_values:
+        assert len(tensors) == 4
+        for tensor in tensors:
+            assert tensor.size() == (batch, config.num_heads, seq_len, config.d_kv)
+
+    if output_attentions:
+        assert len(outputs.decoder_attentions) == config.num_layers
+        for attn in outputs.decoder_attentions:
+            assert attn.size() == (batch, config.num_heads, seq_len, seq_len)
+        assert len(outputs.cross_attentions) == config.num_layers
+        for attn in outputs.cross_attentions:
+            assert attn.size() == (batch, config.num_heads, seq_len, seq_len)
+        assert len(outputs.encoder_attentions) == config.num_layers
+        for attn in outputs.encoder_attentions:
+            assert attn.size() == (batch, config.num_heads, seq_len, seq_len)
+    else:
+        assert outputs.decoder_attentions is None
+        assert outputs.cross_attentions is None
+        assert outputs.encoder_attentions is None
+
+    if output_hidden_states:
+        # num_hidden_layers + 1 for embeddings
+        assert len(outputs.decoder_hidden_states) == config.num_hidden_layers + 1
+        for hidden in outputs.decoder_hidden_states:
+            assert hidden.size() == (batch, seq_len, config.d_model)
+        # num_hidden_layers + 1 for embeddings
+        assert len(outputs.encoder_hidden_states) == config.num_hidden_layers + 1
+        for hidden in outputs.encoder_hidden_states:
+            assert hidden.size() == (batch, seq_len, config.d_model)
+    else:
+        assert outputs.decoder_hidden_states is None
+        assert outputs.encoder_hidden_states is None

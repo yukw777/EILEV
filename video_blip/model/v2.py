@@ -1,10 +1,10 @@
 import random
+import warnings
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import (
-    AutoModelForSeq2SeqLM,
     Blip2Config,
     Blip2ForConditionalGeneration,
     Blip2QFormerModel,
@@ -12,12 +12,15 @@ from transformers import (
     OPTConfig,
     OPTForCausalLM,
     OPTModel,
+    T5ForConditionalGeneration,
     logging,
 )
 from transformers.modeling_outputs import (
+    BaseModelOutput,
     BaseModelOutputWithPast,
     BaseModelOutputWithPooling,
     CausalLMOutputWithPast,
+    Seq2SeqLMOutput,
 )
 from transformers.models.blip_2.modeling_blip_2 import (
     Blip2ForConditionalGenerationModelOutput,
@@ -43,7 +46,6 @@ def _make_video_causal_mask(
     :param attention_mask: optional attention mask of shape (batch, seq_len).
         useful for handling padding
     :param dtype: dtype of the resulting mask
-    :param device: device of the resulting mask
 
     :returns: additive video causal mask of shape (batch, 1, tgt_seq_len, src_seq_len)
     """
@@ -482,6 +484,209 @@ class VideoBlipVisionModel(Blip2VisionModel):
         return (last_hidden_state, pooler_output, hidden_states, attentions)
 
 
+def _make_video_causal_encoder_attn_mask(
+    video_causal_mask: torch.LongTensor | None,
+    encoder_attention_mask: torch.LongTensor | None,
+) -> torch.Tensor | None:
+    """Allow decoder to attend only to the last preceding video.
+
+    :param video_causal_mask: a tensor of shape (batch, text_seq_len, video_seq_len)
+        where text_seq_len + video_seq_len = src_seq_len
+    :param encoder_attention_mask: optional encoder attention mask of shape
+        (batch, seq_len) for padding
+
+    :returns: video causal encoder attention mask of shape (batch, src_seq_len)
+    """
+    if video_causal_mask is None:
+        return encoder_attention_mask
+    batch, text_seq_len, video_seq_len = video_causal_mask.size()
+    seq_len = text_seq_len + video_seq_len
+    if encoder_attention_mask is None:
+        encoder_attention_mask = torch.ones(  # type: ignore
+            batch,
+            text_seq_len + video_seq_len,
+            dtype=video_causal_mask.dtype,
+            device=video_causal_mask.device,
+        )
+    assert encoder_attention_mask is not None
+    assert seq_len == encoder_attention_mask.size(1)
+
+    # we want the decoder to cross-attend only to the videos that the last non-padding
+    # text token attended to.
+    # first, figure out the indices of the last non-padding text token, which is the
+    # index of the first 0 in encoder_attention_mask. Note that argmin() returns the
+    # first minimal value if there are multiple options, which is what we want.
+    last_non_pad_text_token_indices = (
+        encoder_attention_mask[:, video_seq_len:].argmin(dim=1) - 1
+    )
+    # if there is no padding, argmin() above returns 0, but we want to select the last
+    # index.
+    last_non_pad_text_token_indices[encoder_attention_mask.sum(dim=1) == seq_len] = (
+        text_seq_len - 1
+    )
+    # second, select the video causal masks for the last non-padding text tokens
+    # (batch, video_seq_len)
+    video_causal_encoder_attention_mask = video_causal_mask[
+        torch.arange(batch), last_non_pad_text_token_indices
+    ]
+    # third, pad it with 1
+    # (batch, seq_len)
+    video_causal_encoder_attention_mask = F.pad(
+        video_causal_encoder_attention_mask, (0, text_seq_len), value=1
+    )
+    # lastly, multiply it by encoder_attention_mask to account for padding text tokens
+    video_causal_encoder_attention_mask *= encoder_attention_mask
+    return video_causal_encoder_attention_mask
+
+
+class VideoT5ForConditionalGeneration(T5ForConditionalGeneration):
+    def forward(
+        self,
+        input_ids: torch.LongTensor | None = None,
+        attention_mask: torch.LongTensor | None = None,
+        decoder_input_ids: torch.LongTensor | None = None,
+        decoder_attention_mask: torch.BoolTensor | None = None,
+        video_causal_mask: torch.LongTensor | None = None,
+        head_mask: torch.FloatTensor | None = None,
+        decoder_head_mask: torch.FloatTensor | None = None,
+        cross_attn_head_mask: torch.Tensor | None = None,
+        encoder_outputs: tuple[tuple[torch.Tensor]] | None = None,
+        past_key_values: tuple[tuple[torch.Tensor]] | None = None,
+        inputs_embeds: torch.FloatTensor | None = None,
+        decoder_inputs_embeds: torch.FloatTensor | None = None,
+        labels: torch.LongTensor | None = None,
+        use_cache: bool | None = None,
+        output_attentions: bool | None = None,
+        output_hidden_states: bool | None = None,
+        return_dict: bool | None = None,
+    ) -> tuple[torch.FloatTensor] | Seq2SeqLMOutput:
+        """Mostly copied from T5ForConditionalGeneration.forward()
+
+        Look at the official doc T5ForConditionalGeneration for for more details on
+        undocumented parameters.
+
+        :param video_causal_mask: a tensor of shape (batch, text_seq_len, video_seq_len)
+            where text_seq_len + video_seq_len = seq_len
+        """
+        use_cache = use_cache if use_cache is not None else self.config.use_cache
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
+
+        # FutureWarning: head_mask was separated into two input args -
+        # head_mask, decoder_head_mask
+        if head_mask is not None and decoder_head_mask is None:
+            if self.config.num_layers == self.config.num_decoder_layers:
+                warnings.warn(
+                    "head_mask was separated into two input args - head_mask, "
+                    "decoder_head_mask",
+                    FutureWarning,
+                )
+                decoder_head_mask = head_mask
+
+        # Encode if needed (training, first prediction pass)
+        if encoder_outputs is None:
+            # Convert encoder inputs in embeddings if needed
+            encoder_outputs = self.encoder(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                inputs_embeds=inputs_embeds,
+                head_mask=head_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+            )
+        elif return_dict and not isinstance(encoder_outputs, BaseModelOutput):
+            encoder_outputs = BaseModelOutput(
+                last_hidden_state=encoder_outputs[0],
+                hidden_states=encoder_outputs[1] if len(encoder_outputs) > 1 else None,  # type: ignore # noqa: E501
+                attentions=encoder_outputs[2] if len(encoder_outputs) > 2 else None,  # type: ignore # noqa: E501
+            )
+
+        hidden_states = encoder_outputs[0]  # type: ignore
+
+        if self.model_parallel:
+            torch.cuda.set_device(self.decoder.first_device)
+
+        if (
+            labels is not None
+            and decoder_input_ids is None
+            and decoder_inputs_embeds is None
+        ):
+            # get decoder inputs from shifting lm labels to the right
+            decoder_input_ids = self._shift_right(labels)
+
+        # Set device for model parallelism
+        if self.model_parallel:
+            torch.cuda.set_device(self.decoder.first_device)
+            hidden_states = hidden_states.to(self.decoder.first_device)  # type: ignore
+            if decoder_input_ids is not None:
+                decoder_input_ids = decoder_input_ids.to(self.decoder.first_device)  # type: ignore # noqa: E501
+            if attention_mask is not None:
+                attention_mask = attention_mask.to(self.decoder.first_device)  # type: ignore # noqa: E501
+            if decoder_attention_mask is not None:
+                decoder_attention_mask = decoder_attention_mask.to(  # type: ignore
+                    self.decoder.first_device
+                )
+
+        # Decode
+        decoder_outputs = self.decoder(
+            input_ids=decoder_input_ids,
+            attention_mask=decoder_attention_mask,
+            inputs_embeds=decoder_inputs_embeds,
+            past_key_values=past_key_values,
+            encoder_hidden_states=hidden_states,
+            encoder_attention_mask=_make_video_causal_encoder_attn_mask(
+                video_causal_mask, attention_mask
+            ),
+            head_mask=decoder_head_mask,
+            cross_attn_head_mask=cross_attn_head_mask,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+
+        sequence_output = decoder_outputs[0]
+
+        # Set device for model parallelism
+        if self.model_parallel:
+            torch.cuda.set_device(self.encoder.first_device)
+            self.lm_head = self.lm_head.to(self.encoder.first_device)  # type: ignore
+            sequence_output = sequence_output.to(self.lm_head.weight.device)
+
+        if self.config.tie_word_embeddings:
+            # Rescale output before projecting on vocab
+            # See https://github.com/tensorflow/mesh/blob/fa19d69eafc9a482aff0b59ddd96b025c0cb207d/mesh_tensorflow/transformer/transformer.py#L586 # noqa: E501
+            sequence_output = sequence_output * (self.model_dim**-0.5)
+
+        lm_logits = self.lm_head(sequence_output)
+
+        loss = None
+        if labels is not None:
+            loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
+            # move labels to correct device to enable PP
+            labels = labels.to(lm_logits.device)  # type: ignore
+            loss = loss_fct(lm_logits.view(-1, lm_logits.size(-1)), labels.view(-1))
+            # TODO(thom): Add z_loss https://github.com/tensorflow/mesh/blob/fa19d69eafc9a482aff0b59ddd96b025c0cb207d/mesh_tensorflow/layers.py#L666 # noqa: E501
+
+        if not return_dict:
+            output = (lm_logits,) + decoder_outputs[1:] + encoder_outputs
+            return ((loss,) + output) if loss is not None else output
+
+        return Seq2SeqLMOutput(
+            loss=loss,
+            logits=lm_logits,
+            past_key_values=decoder_outputs.past_key_values,
+            decoder_hidden_states=decoder_outputs.hidden_states,
+            decoder_attentions=decoder_outputs.attentions,
+            cross_attentions=decoder_outputs.cross_attentions,
+            encoder_last_hidden_state=encoder_outputs.last_hidden_state,  # type: ignore
+            encoder_hidden_states=encoder_outputs.hidden_states,  # type: ignore
+            encoder_attentions=encoder_outputs.attentions,  # type: ignore
+        )
+
+
 class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
     def __init__(self, config: Blip2Config) -> None:
         # HACK: we call the grandparent super().__init__() to bypass
@@ -502,8 +707,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         if config.use_decoder_only_language_model:
             language_model = VideoOPTForCausalLM(config.text_config)
         else:
-            # TODO: Replace with VideoT5ForConditionalGeneration
-            language_model = AutoModelForSeq2SeqLM.from_config(config.text_config)
+            language_model = VideoT5ForConditionalGeneration(config.text_config)
         self.language_model = language_model
 
         # Initialize weights and apply final processing
@@ -573,7 +777,9 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
             query_output.view(batch_size, num_videos * self.config.num_query_tokens, -1)
         )
         language_model_attention_mask = torch.ones(
-            language_model_inputs.size()[:-1], device=language_model_inputs.device
+            language_model_inputs.size()[:-1],
+            device=language_model_inputs.device,
+            dtype=torch.long,
         )
         inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
         # (batch_size, num_videos * num_query_tokens + num_tokens, qformer_hidden_size)
@@ -593,7 +799,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         )
         if video_causal_mask is None:
             video_causal_mask = torch.ones(
-                batch_size, input_ids.size(1), num_videos
+                batch_size, input_ids.size(1), num_videos, dtype=torch.long
             )  # type: ignore
         video_causal_mask = video_causal_mask.to(  # type: ignore
             language_model_inputs.device
@@ -632,6 +838,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
                 attention_mask=attention_mask,
                 decoder_input_ids=decoder_input_ids,
                 decoder_attention_mask=decoder_attention_mask,
+                video_causal_mask=video_causal_mask,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
                 return_dict=return_dict,
