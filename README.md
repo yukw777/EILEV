@@ -86,11 +86,13 @@ python scripts/extract_frames.py \
 
 **3. Train**
 
+*v1*
+
 - `kpyu/video-blip-opt-2.7b-ego4d`
 
 ```bash
 # Takes about 24 hours on one A40
-python scripts/ego4d/train.py \
+python scripts/ego4d/train_v1.py \
     --model_name_or_path Salesforce/blip2-opt-2.7b \
     --num_subsample_frames 8 \
     --train_narrated_actions_dir path/to/extracted/train/frames \
@@ -116,7 +118,7 @@ python scripts/ego4d/train.py \
 
 ```bash
 # Takes about 23 hours on one A40
-python scripts/ego4d/train.py \
+python scripts/ego4d/train_v1.py \
     --model_name_or_path Salesforce/blip2-flan-t5-xl \
     --num_subsample_frames 8 \
     --train_narrated_actions_dir path/to/extracted/train/frames \
