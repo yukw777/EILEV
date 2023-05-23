@@ -24,7 +24,10 @@ class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForVideoSeq2Seq):
         video_causal_mask_list = [
             feature.pop("video_causal_mask") for feature in features
         ]
-        max_text_token_len = max(mask.size(0) for mask in video_causal_mask_list)
+        collated = super().__call__(features, return_tensors=return_tensors)
+        # use the text token length calculated by super() as it handles
+        # pad_to_multiple_of.
+        max_text_token_len = collated["attention_mask"].size(1)
         max_video_token_len = max(mask.size(1) for mask in video_causal_mask_list)
         video_causal_mask = torch.stack(
             [
@@ -40,7 +43,6 @@ class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForVideoSeq2Seq):
                 for mask in video_causal_mask_list
             ]
         )
-        collated = super().__call__(features, return_tensors=return_tensors)
         collated["video_causal_mask"] = video_causal_mask
         return collated
 

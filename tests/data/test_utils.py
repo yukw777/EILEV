@@ -524,7 +524,7 @@ def test_generate_input_ids_and_labels_from_interleaved(
 
 
 @pytest.mark.parametrize(
-    "datapoints,expected",
+    "datapoints,attention_mask,expected",
     [
         (
             [
@@ -532,7 +532,20 @@ def test_generate_input_ids_and_labels_from_interleaved(
                     "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
                 }
             ],
+            torch.ones(1, 3).long(),
             torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
+        ),
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            # pad to multiple of 8
+            torch.tensor([[1] * 3 + [0] * 5]),
+            torch.tensor(
+                [[[1, 0], [1, 0], [0, 1], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]]
+            ),
         ),
         (
             [
@@ -565,6 +578,7 @@ def test_generate_input_ids_and_labels_from_interleaved(
                     ),
                 },
             ],
+            torch.tensor([[1] * 3 + [0] * 4, [1] * 7, [1] * 6 + [0]]),
             torch.tensor(
                 [
                     [
@@ -597,12 +611,82 @@ def test_generate_input_ids_and_labels_from_interleaved(
                 ]
             ),
         ),
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0],
+                            [1, 0, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 0, 1],
+                            [0, 0, 1],
+                        ]
+                    ),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 1],
+                        ]
+                    ),
+                },
+            ],
+            # pad to multiple of 8
+            torch.tensor([[1] * 3 + [0] * 5, [1] * 7 + [0], [1] * 6 + [0] * 2]),
+            torch.tensor(
+                [
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 1],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                    ],
+                ]
+            ),
+        ),
     ],
 )
-def test_data_collator_for_interleaved_video_seq2seq(datapoints, expected):
+def test_data_collator_for_interleaved_video_seq2seq(
+    datapoints, attention_mask, expected
+):
     with patch(
         "video_blip.data.utils.DataCollatorForVideoSeq2Seq.__call__",
-        return_value=BatchEncoding(),
+        return_value=BatchEncoding(data={"attention_mask": attention_mask}),
     ):
         collator = DataCollatorForInterleavedVideoSeq2Seq(Mock())
         collated = collator(datapoints)
