@@ -71,9 +71,6 @@ def train() -> None:
     parser = transformers.HfArgumentParser(
         (ModelArguments, DataArguments, TrainingArguments)
     )
-    model_args: ModelArguments
-    data_args: DataArguments
-    training_args: TrainingArguments
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     # Don't remove "unused columns" such as clip-related columns
@@ -109,7 +106,7 @@ def train() -> None:
     )
     val_data = Ego4dFHOMainFrameInterleavedDataset(
         data_args.val_narrated_actions_dir,
-        num_videos_per_sample=data_args.num_videos_per_sample,
+        num_videos_per_sample=1,
         transform=partial(
             preprocess,
             processor,
