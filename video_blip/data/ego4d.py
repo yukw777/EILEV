@@ -204,14 +204,15 @@ class Ego4dFHOMainFrameInterleavedDataset(Ego4dFHOMainFrameDataset):
         num_videos_per_sample: int = 5,
         transform: Callable[[dict], Any] | None = None,
     ) -> None:
-        super().__init__(narrated_actions_dir, transform=transform)
+        super().__init__(narrated_actions_dir, transform=None)
         self.num_videos_per_sample = num_videos_per_sample
+        self._interleaved_transform = transform
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         others = random.sample(
             [i for i in range(len(self)) if i != index], self.num_videos_per_sample - 1
         )
-        return {
+        item = {
             "items": [
                 # NOTE: need to use the two-arg form of super() as list comprehensions
                 # create their own scopes.
@@ -219,3 +220,6 @@ class Ego4dFHOMainFrameInterleavedDataset(Ego4dFHOMainFrameDataset):
                 for i in others + [index]
             ]
         }
+        if self._interleaved_transform is not None:
+            item = self._interleaved_transform(item)
+        return item
