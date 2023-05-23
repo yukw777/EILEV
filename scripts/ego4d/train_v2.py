@@ -38,9 +38,11 @@ def preprocess(
         [[i] for i in range(len(datapoint["items"]))],
         decoder_only_lm,
     )
-    preprocessed["pixel_values"] = item["video"]
+    videos = [item["video"] for item in datapoint["items"]]
     if video_transform is not None:
-        preprocessed["pixel_values"] = video_transform(preprocessed["pixel_values"])
+        for i in range(len(videos)):
+            videos[i] = video_transform(videos[i])
+    preprocessed["pixel_values"] = torch.stack(videos)
 
     return preprocessed
 
