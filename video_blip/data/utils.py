@@ -109,12 +109,13 @@ def generate_input_ids_and_labels_from_interleaved(
     texts: list[str],
     num_videos: int,
     text_video_map: list[list[int]],
-    decoder_only_lm: bool,
 ) -> dict[str, torch.Tensor]:
     """Generate input ids and labels from the given interleaved video/text data
     point. We treat the last prompt and text as labels and the rest as the
     context. `text_video_map` specifies which videos are the last preceding
-    videos for a given text, and is used to generate `video_causal_mask`.
+    videos for a given text, and is used to generate `video_causal_mask`. Note
+    that this is for autoregressive language modeling, so only decoder only LMs
+    are supported.
 
     :param tokenizer: tokenizer for tokenizing inputs and label
     :param prompts: list of prompt for the LLM
@@ -135,26 +136,11 @@ def generate_input_ids_and_labels_from_interleaved(
 
     processed_texts: list[BatchEncoding] = []
     for i, (prompt, text) in enumerate(zip(prompts, texts)):
-        processed = generate_input_ids_and_labels(
-            tokenizer, prompt, text, decoder_only_lm
-        )
-        if decoder_only_lm:
-            # decoder only lm
-            if i != len(texts) - 1:
-                # if not last, set all labels to -100 as it's part of the context.
-                processed["labels"] = torch.full_like(processed["labels"], -100)
-            if i != 0:
-                # if not first, remove bos
-                processed["input_ids"] = processed["input_ids"][1:]
-                processed["labels"] = processed["labels"][1:]
-        else:
-            if i != len(texts) - 1:
-                # if not last, append labels to input_ids after removing eos from it
-                # as it's part of the context.
-                processed["input_ids"] = torch.cat(
-                    [processed["input_ids"][:-1], processed["labels"]]
-                )
-                processed["labels"] = torch.empty(0)
+        processed = generate_input_ids_and_labels(tokenizer, prompt, text, True)
+        if i != 0:
+            # if not first, remove bos
+            processed["input_ids"] = processed["input_ids"][1:]
+            processed["labels"] = processed["labels"][1:]
 
         if i != len(texts) - 1:
             # if not last, remove eos

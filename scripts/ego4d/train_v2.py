@@ -24,7 +24,6 @@ PROMPT = "Question: What is the camera wearer doing? Answer:"
 def preprocess(
     processor: Blip2Processor,
     datapoint: dict[str, Any],
-    decoder_only_lm: bool = True,
     video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, torch.Tensor]:
     cleaned_narration_texts: list[str] = []
@@ -36,7 +35,6 @@ def preprocess(
         cleaned_narration_texts,
         len(datapoint["items"]),
         [[i] for i in range(len(datapoint["items"]))],
-        decoder_only_lm,
     )
     videos = [item["video"] for item in datapoint["items"]]
     if video_transform is not None:
@@ -98,7 +96,6 @@ def train() -> None:
         transform=partial(
             preprocess,
             processor,
-            decoder_only_lm=model.config.use_decoder_only_language_model,
             video_transform=Compose(
                 [UniformTemporalSubsample(model_args.num_subsample_frames)]
             ),
@@ -106,11 +103,10 @@ def train() -> None:
     )
     val_data = Ego4dFHOMainFrameInterleavedDataset(
         data_args.val_narrated_actions_dir,
-        num_videos_per_sample=1,
+        num_videos_per_sample=data_args.num_videos_per_sample,
         transform=partial(
             preprocess,
             processor,
-            decoder_only_lm=model.config.use_decoder_only_language_model,
             video_transform=Compose(
                 [UniformTemporalSubsample(model_args.num_subsample_frames)]
             ),

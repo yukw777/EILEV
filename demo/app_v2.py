@@ -41,12 +41,8 @@ def respond(
         processor.tokenizer(text_block, add_special_tokens=False).input_ids
         for text_block in state.text_blocks
     ]
-    if model.config.use_decoder_only_language_model:
-        # prepend bos token to the first text block
-        processed_texts[0] = [processor.tokenizer.bos_token_id] + processed_texts[0]
-    else:
-        # append eos token to the last text block
-        processed_texts[-1].append(processor.tokenizer.eos_token_id)
+    # prepend bos token to the first text block
+    processed_texts[0] = [processor.tokenizer.bos_token_id] + processed_texts[0]
     video_causal_mask = torch.zeros(
         sum(len(processed) for processed in processed_texts),
         len(state.videos),
