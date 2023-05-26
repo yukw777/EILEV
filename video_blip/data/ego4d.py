@@ -1,6 +1,8 @@
 import json
+import logging
 import os
 import random
+from collections import defaultdict
 from collections.abc import Callable
 from csv import DictReader
 from fractions import Fraction
@@ -11,7 +13,9 @@ from pytorchvideo.data.clip_sampling import ClipInfo
 from pytorchvideo.data.video import VideoPathHandler
 from torch.utils.data import Dataset
 
-from video_blip.data.utils import C_REGEX
+from video_blip.data.utils import C_REGEX, generate_chunks
+
+logger = logging.getLogger(__name__)
 
 
 class NarratedActionClipSampler(ClipSampler):
@@ -197,29 +201,47 @@ class Ego4dFHOMainFrameDataset(Dataset[dict[str, Any]]):
         return len(self.data)
 
 
-class Ego4dFHOMainFrameInterleavedDataset(Ego4dFHOMainFrameDataset):
+class Ego4dFHOMainFrameInterleavedDataset:
     def __init__(
         self,
         narrated_actions_dir: str,
         num_videos_per_sample: int = 5,
         transform: Callable[[dict], Any] | None = None,
     ) -> None:
-        super().__init__(narrated_actions_dir, transform=None)
         self.num_videos_per_sample = num_videos_per_sample
-        self._interleaved_transform = transform
+        self._dataset = Ego4dFHOMainFrameDataset(narrated_actions_dir)
+
+        # video_uid => [(dataset_index, clip), ...]
+        video_clip_map: dict[str, list[tuple[int, dict[str, Any]]]] = defaultdict(list)
+        for i, row in enumerate(self._dataset.data):
+            video_clip_map[row["video_uid"]].append((i, row))
+
+        # generate chunks for each video and add to self.data
+        self.data: list[list[int]] = []
+        num_dropped_chunks = 0
+        for _, clips in video_clip_map.items():
+            # first, sort by clip index
+            clips.sort(key=lambda item: int(item[1]["clip_index"]))
+
+            # then chunk it and add the dataset index to data
+            for chunk in generate_chunks(clips, num_videos_per_sample):
+                # in order to simplify training, drop the chunk if it's shorter
+                # than num_videos_per_sample
+                if len(chunk) < num_videos_per_sample:
+                    num_dropped_chunks += 1
+                    continue
+                self.data.append([i for i, _ in chunk])
+        logging.warning(
+            f"Number of dropped chunks: {num_dropped_chunks} out of {len(self)}"
+        )
+
+        self._transform = transform
 
     def __getitem__(self, index: int) -> dict[str, Any]:
-        others = random.sample(
-            [i for i in range(len(self)) if i != index], self.num_videos_per_sample - 1
-        )
-        item = {
-            "items": [
-                # NOTE: need to use the two-arg form of super() as list comprehensions
-                # create their own scopes.
-                super(Ego4dFHOMainFrameInterleavedDataset, self).__getitem__(i)
-                for i in others + [index]
-            ]
-        }
-        if self._interleaved_transform is not None:
-            item = self._interleaved_transform(item)
+        item = {"items": [self._dataset[i] for i in self.data[index]]}
+        if self._transform is not None:
+            item = self._transform(item)
         return item
+
+    def __len__(self) -> int:
+        return len(self.data)
