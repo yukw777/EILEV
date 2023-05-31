@@ -143,3 +143,7 @@ python scripts/ego4d/train_v1.py \
 ## Citing VideoBLIP
 
 Please refer to [CITATION.cff](CITATION.cff), or click the "Cite this repository" button on GitHub.
+
+## Funding
+
+This project is supported by the Defense Advanced Research Projects Agency (DARPA) under the PTG Program, Contract No. HR00112220003. The views expressed are those of the author(s) and do not necessarily reflect the views of DARPA.
