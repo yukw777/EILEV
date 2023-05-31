@@ -299,6 +299,7 @@ def construct_demo(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default="kpyu/video-blip-flan-t5-xl-ego4d")
+    parser.add_argument("--processor", default=None)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--queue", action="store_true", default=False)
     parser.add_argument("--concurrency-count", type=int, default=1)
@@ -308,7 +309,9 @@ if __name__ == "__main__":
     model = VideoBlipForConditionalGeneration.from_pretrained(args.model).to(
         args.device
     )
-    processor = Blip2Processor.from_pretrained(args.model)
+    if args.processor is None:
+        args.processor = args.model
+    processor = Blip2Processor.from_pretrained(args.processor)
     demo = construct_demo(model, processor, VideoPathHandler())
     if args.queue:
         demo.queue(
