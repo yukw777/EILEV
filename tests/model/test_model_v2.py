@@ -7,7 +7,6 @@ from video_blip.model.v2 import (
     VideoBlipVisionModel,
     VideoOPTDecoder,
     VideoOPTForCausalLM,
-    _prepare_decoder_attention_mask,
 )
 
 
@@ -176,12 +175,20 @@ from video_blip.model.v2 import (
             torch.tensor(
                 [
                     [
-                        [0.0] * 1 + [torch.finfo(torch.float).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
-                        [0.0] * 3 + [torch.finfo(torch.float).min] * 8,
-                        [0.0] * 4 + [torch.finfo(torch.float).min] * 7,
-                        [0.0] * 5 + [torch.finfo(torch.float).min] * 6,
-                        [0.0] * 6 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 7,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 7,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 5,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 5,
                         [0.0] * 2
                         + [torch.finfo(torch.float).min] * 4
                         + [0.0] * 1
@@ -205,12 +212,20 @@ from video_blip.model.v2 import (
                         + [torch.finfo(torch.float).min] * 2,
                     ],
                     [
-                        [0.0] * 1 + [torch.finfo(torch.float).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
-                        [0.0] * 3 + [torch.finfo(torch.float).min] * 8,
-                        [0.0] * 4 + [torch.finfo(torch.float).min] * 7,
-                        [0.0] * 5 + [torch.finfo(torch.float).min] * 6,
-                        [0.0] * 6 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 7,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 7,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 5,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 5,
                         [0.0] * 2
                         + [torch.finfo(torch.float).min] * 4
                         + [0.0] * 1
@@ -232,12 +247,20 @@ from video_blip.model.v2 import (
                         [torch.finfo(torch.float).min] * 4 + [0.0] * 2 + [0.0] * 5,
                     ],
                     [
-                        [0.0] * 1 + [torch.finfo(torch.float).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
-                        [0.0] * 3 + [torch.finfo(torch.float).min] * 8,
-                        [0.0] * 4 + [torch.finfo(torch.float).min] * 7,
-                        [0.0] * 5 + [torch.finfo(torch.float).min] * 6,
-                        [0.0] * 6 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 7,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 7,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 5,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 5,
                         [0.0] * 2
                         + [torch.finfo(torch.float).min] * 4
                         + [0.0] * 1
@@ -293,12 +316,20 @@ from video_blip.model.v2 import (
             torch.tensor(
                 [
                     [
-                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
-                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 8,
-                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 7,
-                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 6,
-                        [0.0] * 6 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 7,
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 7,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 5,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 5,
                         [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 4
                         + [0.0] * 1
@@ -322,12 +353,20 @@ from video_blip.model.v2 import (
                         + [torch.finfo(torch.float16).min] * 2,
                     ],
                     [
-                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
-                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 8,
-                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 7,
-                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 6,
-                        [0.0] * 6 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 7,
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 7,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 5,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 5,
                         [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 4
                         + [0.0] * 1
@@ -349,12 +388,20 @@ from video_blip.model.v2 import (
                         [torch.finfo(torch.float16).min] * 4 + [0.0] * 2 + [0.0] * 5,
                     ],
                     [
-                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
-                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 8,
-                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 7,
-                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 6,
-                        [0.0] * 6 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 7,
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 7,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 5,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 5,
                         [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 4
                         + [0.0] * 1
@@ -535,7 +582,16 @@ def test_prepare_decoder_attention_mask(
     dtype,
     expected,
 ):
-    assert _prepare_decoder_attention_mask(
+    model = VideoOPTDecoder(
+        OPTConfig(
+            hidden_size=8,
+            num_hidden_layers=2,
+            ffn_dim=16,
+            num_attention_heads=2,
+            qformer_num_query_tokens=2,
+        )
+    )
+    assert model._prepare_decoder_attention_mask(
         attention_mask,
         video_causal_mask,
         batch,
@@ -555,10 +611,18 @@ def test_prepare_decoder_attention_mask(
     "config",
     [
         OPTConfig(
-            hidden_size=8, num_hidden_layers=2, ffn_dim=16, num_attention_heads=2
+            hidden_size=8,
+            num_hidden_layers=2,
+            ffn_dim=16,
+            num_attention_heads=2,
+            qformer_num_query_tokens=2,
         ),
         OPTConfig(
-            hidden_size=16, num_hidden_layers=4, ffn_dim=32, num_attention_heads=4
+            hidden_size=16,
+            num_hidden_layers=4,
+            ffn_dim=32,
+            num_attention_heads=4,
+            qformer_num_query_tokens=4,
         ),
     ],
 )
@@ -621,10 +685,18 @@ def test_v2_video_opt_decoder_forward(
     "config",
     [
         OPTConfig(
-            hidden_size=8, num_hidden_layers=2, ffn_dim=16, num_attention_heads=2
+            hidden_size=8,
+            num_hidden_layers=2,
+            ffn_dim=16,
+            num_attention_heads=2,
+            qformer_num_query_tokens=2,
         ),
         OPTConfig(
-            hidden_size=16, num_hidden_layers=4, ffn_dim=32, num_attention_heads=4
+            hidden_size=16,
+            num_hidden_layers=4,
+            ffn_dim=32,
+            num_attention_heads=4,
+            qformer_num_query_tokens=2,
         ),
     ],
 )
