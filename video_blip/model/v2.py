@@ -25,44 +25,92 @@ from transformers.modeling_outputs import (
 from transformers.models.blip_2.modeling_blip_2 import (
     Blip2ForConditionalGenerationModelOutput,
 )
-from transformers.models.opt.modeling_opt import (
-    OPTDecoder,
-    _expand_mask,
-    _make_causal_mask,
-)
+from transformers.models.opt.modeling_opt import OPTDecoder
 
 logger = logging.get_logger(__name__)
 
 
-def _make_video_causal_mask(
-    video_causal_mask: torch.Tensor,
+def _prepare_decoder_attention_mask(
     attention_mask: torch.Tensor | None,
+    video_causal_mask: torch.Tensor | None,
+    batch: int,
+    tgt_seq_len: int,
+    past_key_values_length: int,
+    device: torch.device,
     dtype: torch.dtype,
 ) -> torch.Tensor:
-    """Allow text tokens to attend only to the last preceding video.
+    """Create an additive decoder attention mask that is a combination of
+    causal, video causal and attention masks.
 
-    :param video_causal_mask: a tensor of shape (batch, text_seq_len, video_seq_len)
-        where text_seq_len + video_seq_len = seq_len
-    :param attention_mask: optional attention mask of shape (batch, seq_len).
+    :param attention_mask: optional attention mask of shape (batch, src_seq_len).
         useful for handling padding
+    :param video_causal_mask: optional video causal mask of shape
+        (batch, text_seq_len, video_seq_len)
+    :param batch: batch dimension size
+    :param tgt_seq_len: target sequence length
+    :param past_key_values_length: length of cached past key values,
+        src_seq_len = past_key_values_length + tgt_seq_len
+    :param device: device of the resulting mask
     :param dtype: dtype of the resulting mask
 
-    :returns: additive video causal mask of shape (batch, 1, tgt_seq_len, src_seq_len)
+    :returns: additive attention mask of shape (batch, 1, tgt_seq_len, src_seq_len)
     """
-    inverted_mask = 1.0 - video_causal_mask.to(dtype=dtype)
+    src_seq_len = past_key_values_length + tgt_seq_len
+    combined_attention_mask = torch.ones(batch, tgt_seq_len, src_seq_len, device=device)
+    if tgt_seq_len > 1:
+        # (tgt_seq_len, tgt_seq_len)
+        causal_mask = torch.ones(tgt_seq_len, tgt_seq_len, device=device).tril()
+        # (tgt_seq_len, src_seq_len)
+        causal_mask = torch.cat(
+            [
+                torch.ones(tgt_seq_len, past_key_values_length, device=device),
+                causal_mask,
+            ],
+            dim=-1,
+        )
+        # (batch, tgt_seq_len, src_seq_len)
+        causal_mask = causal_mask[None, :, :].expand(batch, tgt_seq_len, src_seq_len)
 
-    # (batch, text_seq_len, video_seq_len)
-    mask = inverted_mask.masked_fill(
-        inverted_mask.to(torch.bool), torch.finfo(dtype).min
-    )
-    _, text_seq_len, video_seq_len = video_causal_mask.size()
-    # (batch, seq_len, seq_len)
-    mask = F.pad(mask, (0, text_seq_len, video_seq_len, 0))
+        combined_attention_mask *= causal_mask
+
+    if video_causal_mask is not None:
+        _, _, video_seq_len = video_causal_mask.size()
+        # (batch, tgt_seq_len, video_seq_len)
+        expanded_video_causal_mask = torch.cat(
+            [
+                torch.ones(
+                    batch, video_seq_len, video_seq_len, device=video_causal_mask.device
+                ),
+                video_causal_mask,
+            ],
+            dim=1,
+        )[:, -tgt_seq_len:]
+        # (batch, tgt_seq_len, src_seq_len)
+        expanded_video_causal_mask = torch.cat(
+            [
+                expanded_video_causal_mask,
+                torch.ones(
+                    batch,
+                    tgt_seq_len,
+                    src_seq_len - video_seq_len,
+                    device=expanded_video_causal_mask.device,
+                ),
+            ],
+            dim=-1,
+        )
+        combined_attention_mask *= expanded_video_causal_mask
+
     if attention_mask is not None:
-        mask *= attention_mask.unsqueeze(-1)
+        # (batch, tgt_seq_len, src_seq_len)
+        expanded_attn_mask = attention_mask[:, None, :].expand(batch, tgt_seq_len, -1)
+        combined_attention_mask *= expanded_attn_mask
 
-    # (batch, seq_len, seq_len)
-    return mask.unsqueeze(1)
+    inverted_mask = 1.0 - combined_attention_mask
+
+    # (batch, 1, tgt_seq_len, src_seq_len)
+    return inverted_mask.masked_fill(
+        inverted_mask.to(torch.bool), torch.finfo(dtype).min
+    ).unsqueeze(1)
 
 
 class VideoOPTDecoder(OPTDecoder):
@@ -134,12 +182,14 @@ class VideoOPTDecoder(OPTDecoder):
             attention_mask = torch.ones(
                 batch_size, mask_seq_length, device=inputs_embeds.device
             )
-        causal_attention_mask = self._prepare_decoder_attention_mask(
+        causal_attention_mask = _prepare_decoder_attention_mask(
             attention_mask,
             video_causal_mask,
-            input_shape,
-            inputs_embeds,
+            batch_size,
+            seq_length,
             past_key_values_length,
+            inputs_embeds.device,
+            inputs_embeds.dtype,
         )
         pos_embeds = self.embed_positions(attention_mask, past_key_values_length)
 
@@ -242,44 +292,6 @@ class VideoOPTDecoder(OPTDecoder):
             hidden_states=all_hidden_states,
             attentions=all_self_attns,
         )
-
-    def _prepare_decoder_attention_mask(
-        self,
-        attention_mask,
-        video_causal_mask,
-        input_shape,
-        inputs_embeds,
-        past_key_values_length,
-    ):
-        # create causal mask
-        # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-        combined_attention_mask = None
-        if input_shape[-1] > 1:
-            combined_attention_mask = _make_causal_mask(
-                input_shape,
-                inputs_embeds.dtype,
-                device=inputs_embeds.device,
-                past_key_values_length=past_key_values_length,
-            )
-
-        if attention_mask is not None:
-            # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-            expanded_attn_mask = _expand_mask(
-                attention_mask, inputs_embeds.dtype, tgt_len=input_shape[-1]
-            ).to(inputs_embeds.device)
-            combined_attention_mask = (
-                expanded_attn_mask
-                if combined_attention_mask is None
-                else expanded_attn_mask + combined_attention_mask
-            )
-
-        if video_causal_mask is not None:
-            expanded_video_causal_mask = _make_video_causal_mask(
-                video_causal_mask, attention_mask, inputs_embeds.dtype
-            )
-            combined_attention_mask += expanded_video_causal_mask
-
-        return combined_attention_mask
 
 
 class VideoOPTModel(OPTModel):
@@ -390,11 +402,7 @@ class VideoOPTForCausalLM(OPTForCausalLM):
         inputs = super().prepare_inputs_for_generation(
             input_ids, past_key_values, attention_mask, inputs_embeds, **kwargs
         )
-        # if `video_causal_mask` is passed, we only want to use them in
-        # the 1st generation step, after which we should proceed as if
-        # we're performing regular text generation w/out video causal masks.
-        if video_causal_mask is not None and past_key_values is None:
-            inputs["video_causal_mask"] = video_causal_mask
+        inputs["video_causal_mask"] = video_causal_mask
         return inputs
 
 

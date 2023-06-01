@@ -9,139 +9,145 @@ from video_blip.model.v2 import (
     VideoOPTForCausalLM,
     VideoT5ForConditionalGeneration,
     _make_video_causal_encoder_attn_mask,
-    _make_video_causal_mask,
+    _prepare_decoder_attention_mask,
 )
 
 
 @pytest.mark.parametrize(
-    "video_causal_mask,attention_mask,dtype,expected",
+    "attention_mask,video_causal_mask,batch,tgt_seq_len,past_key_values_length,dtype,"
+    "expected",
     [
+        (None, None, 1, 1, 0, torch.float, torch.zeros(1, 1, 1, 1)),
+        (None, None, 1, 1, 0, torch.float16, torch.zeros(1, 1, 1, 1).to(torch.float16)),
         (
-            torch.tensor([[[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 1, 1]]]),
-            torch.ones(1, 7).long(),
+            None,
+            None,
+            4,
+            6,
+            0,
             torch.float,
             torch.tensor(
                 [
-                    [0.0] * 7,
-                    [0.0] * 7,
-                    [0.0] * 7,
-                    [0.0] * 7,
-                    [0.0] * 2
-                    + [torch.finfo(torch.float).min, torch.finfo(torch.float).min]
-                    + [0.0] * 3,
-                    [0.0] * 2
-                    + [torch.finfo(torch.float).min, torch.finfo(torch.float).min]
-                    + [0.0] * 3,
-                    [torch.finfo(torch.float).min, torch.finfo(torch.float).min]
-                    + [0.0] * 5,
+                    [0.0] * 1 + [torch.finfo(torch.float).min] * 5,
+                    [0.0] * 2 + [torch.finfo(torch.float).min] * 4,
+                    [0.0] * 3 + [torch.finfo(torch.float).min] * 3,
+                    [0.0] * 4 + [torch.finfo(torch.float).min] * 2,
+                    [0.0] * 5 + [torch.finfo(torch.float).min] * 1,
+                    [0.0] * 6 + [torch.finfo(torch.float).min] * 0,
                 ]
-            ).view(1, 1, 7, 7),
+            )
+            .view(1, 1, 6, -1)
+            .expand(4, 1, -1, -1),
         ),
         (
-            torch.tensor([[[1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 1, 1]]]),
-            torch.ones(1, 7).long(),
+            None,
+            None,
+            4,
+            6,
+            0,
             torch.float16,
             torch.tensor(
                 [
-                    [0] * 7,
-                    [0] * 7,
-                    [0] * 7,
-                    [0] * 7,
-                    [0] * 2
-                    + [torch.finfo(torch.float16).min, torch.finfo(torch.float16).min]
-                    + [0] * 3,
-                    [0] * 2
-                    + [torch.finfo(torch.float16).min, torch.finfo(torch.float16).min]
-                    + [0] * 3,
-                    [torch.finfo(torch.float16).min, torch.finfo(torch.float16).min]
-                    + [0] * 5,
+                    [0.0] * 1 + [torch.finfo(torch.float16).min] * 5,
+                    [0.0] * 2 + [torch.finfo(torch.float16).min] * 4,
+                    [0.0] * 3 + [torch.finfo(torch.float16).min] * 3,
+                    [0.0] * 4 + [torch.finfo(torch.float16).min] * 2,
+                    [0.0] * 5 + [torch.finfo(torch.float16).min] * 1,
+                    [0.0] * 6 + [torch.finfo(torch.float16).min] * 0,
                 ]
-            ).view(1, 1, 7, 7),
+            )
+            .view(1, 1, 6, -1)
+            .expand(4, 1, -1, -1)
+            .to(torch.float16),
         ),
         (
             torch.tensor(
                 [
-                    [
-                        [1, 1, 0, 0, 0, 0],
-                        [1, 1, 0, 0, 0, 0],
-                        [0, 0, 1, 1, 0, 0],
-                        [0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0],
-                    ],
-                    [
-                        [1, 1, 0, 0, 0, 0],
-                        [0, 0, 1, 1, 0, 0],
-                        [0, 0, 1, 1, 0, 0],
-                        [0, 0, 0, 0, 1, 1],
-                        [0, 0, 0, 0, 1, 1],
-                    ],
-                    [
-                        [1, 1, 0, 0, 0, 0],
-                        [1, 1, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0],
-                    ],
+                    [1] * 5 + [0] * 1,
+                    [1] * 4 + [0] * 2,
+                    [1] * 6 + [0] * 0,
                 ]
             ),
-            torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            None,
+            3,
+            6,
+            0,
             torch.float,
             torch.tensor(
                 [
                     [
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4 + [0.0] * 5,
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4 + [0.0] * 5,
-                        [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 5,
-                        [0.0] * 11,
-                        [0.0] * 11,
+                        [0.0] * 1 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4,
+                        [0.0] * 3 + [torch.finfo(torch.float).min] * 3,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 2,
+                        [0.0] * 5 + [torch.finfo(torch.float).min] * 1,
+                        [0.0] * 5 + [torch.finfo(torch.float).min] * 1,
                     ],
                     [
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4 + [0.0] * 5,
-                        [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 5,
-                        [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 5,
-                        [torch.finfo(torch.float).min] * 4 + [0.0] * 7,
-                        [torch.finfo(torch.float).min] * 4 + [0.0] * 7,
+                        [0.0] * 1 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4,
+                        [0.0] * 3 + [torch.finfo(torch.float).min] * 3,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 2,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 2,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 2,
                     ],
                     [
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4 + [0.0] * 5,
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4 + [0.0] * 5,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
+                        [0.0] * 1 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 4,
+                        [0.0] * 3 + [torch.finfo(torch.float).min] * 3,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 2,
+                        [0.0] * 5 + [torch.finfo(torch.float).min] * 1,
+                        [0.0] * 6 + [torch.finfo(torch.float).min] * 0,
                     ],
-                ]
+                ],
             ).unsqueeze(1),
         ),
         (
             torch.tensor(
                 [
+                    [1] * 5 + [0] * 1,
+                    [1] * 4 + [0] * 2,
+                    [1] * 6 + [0] * 0,
+                ]
+            ),
+            None,
+            3,
+            6,
+            0,
+            torch.float16,
+            torch.tensor(
+                [
+                    [
+                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4,
+                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 3,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 2,
+                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 1,
+                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 1,
+                    ],
+                    [
+                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4,
+                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 3,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 2,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 2,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 2,
+                    ],
+                    [
+                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4,
+                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 3,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 2,
+                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 1,
+                        [0.0] * 6 + [torch.finfo(torch.float16).min] * 0,
+                    ],
+                ],
+            ).unsqueeze(1),
+        ),
+        (
+            torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            torch.tensor(
+                [
                     [
                         [1, 1, 0, 0, 0, 0],
                         [1, 1, 0, 0, 0, 0],
@@ -165,67 +171,381 @@ from video_blip.model.v2 import (
                     ],
                 ]
             ),
+            3,
+            11,
+            0,
+            torch.float,
+            torch.tensor(
+                [
+                    [
+                        [0.0] * 1 + [torch.finfo(torch.float).min] * 10,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [0.0] * 3 + [torch.finfo(torch.float).min] * 8,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 7,
+                        [0.0] * 5 + [torch.finfo(torch.float).min] * 6,
+                        [0.0] * 6 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 1
+                        + [torch.finfo(torch.float).min] * 4,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                        [torch.finfo(torch.float).min] * 4
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                        [torch.finfo(torch.float).min] * 4
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                    ],
+                    [
+                        [0.0] * 1 + [torch.finfo(torch.float).min] * 10,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [0.0] * 3 + [torch.finfo(torch.float).min] * 8,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 7,
+                        [0.0] * 5 + [torch.finfo(torch.float).min] * 6,
+                        [0.0] * 6 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 1
+                        + [torch.finfo(torch.float).min] * 4,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [0.0] * 4
+                        + [torch.finfo(torch.float).min] * 1,
+                        [torch.finfo(torch.float).min] * 4 + [0.0] * 2 + [0.0] * 5,
+                    ],
+                    [
+                        [0.0] * 1 + [torch.finfo(torch.float).min] * 10,
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [0.0] * 3 + [torch.finfo(torch.float).min] * 8,
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 7,
+                        [0.0] * 5 + [torch.finfo(torch.float).min] * 6,
+                        [0.0] * 6 + [torch.finfo(torch.float).min] * 5,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 1
+                        + [torch.finfo(torch.float).min] * 4,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                    ],
+                ]
+            ).unsqueeze(1),
+        ),
+        (
             torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            torch.tensor(
+                [
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            11,
+            0,
             torch.float16,
             torch.tensor(
                 [
                     [
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4 + [0.0] * 5,
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4 + [0.0] * 5,
+                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 10,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 8,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 7,
+                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 6,
+                        [0.0] * 6 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 1
+                        + [torch.finfo(torch.float16).min] * 4,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
                         [torch.finfo(torch.float16).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 2
-                        + [0.0] * 5,
-                        [0.0] * 11,
-                        [0.0] * 11,
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
                     ],
                     [
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4 + [0.0] * 5,
+                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 10,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 8,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 7,
+                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 6,
+                        [0.0] * 6 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 1
+                        + [torch.finfo(torch.float16).min] * 4,
                         [torch.finfo(torch.float16).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 2
-                        + [0.0] * 5,
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
                         [torch.finfo(torch.float16).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 2
-                        + [0.0] * 5,
-                        [torch.finfo(torch.float16).min] * 4 + [0.0] * 7,
-                        [torch.finfo(torch.float16).min] * 4 + [0.0] * 7,
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [0.0] * 4
+                        + [torch.finfo(torch.float16).min] * 1,
+                        [torch.finfo(torch.float16).min] * 4 + [0.0] * 2 + [0.0] * 5,
                     ],
                     [
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4 + [0.0] * 5,
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 4 + [0.0] * 5,
-                        [0.0] * 11,
-                        [0.0] * 11,
-                        [0.0] * 11,
+                        [0.0] * 1 + [torch.finfo(torch.float16).min] * 10,
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [0.0] * 3 + [torch.finfo(torch.float16).min] * 8,
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 7,
+                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 6,
+                        [0.0] * 6 + [torch.finfo(torch.float16).min] * 5,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 1
+                        + [torch.finfo(torch.float16).min] * 4,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
+                    ],
+                ]
+            ).unsqueeze(1),
+        ),
+        (None, None, 1, 1, 8, torch.float, torch.zeros(1, 1, 1, 9)),
+        (None, None, 1, 1, 8, torch.float16, torch.zeros(1, 1, 1, 9).to(torch.float16)),
+        (None, None, 4, 1, 8, torch.float, torch.zeros(4, 1, 1, 9)),
+        (None, None, 4, 1, 8, torch.float16, torch.zeros(4, 1, 1, 9).to(torch.float16)),
+        (
+            torch.tensor(
+                [
+                    [1] * 5 + [0] * 1,
+                    [1] * 4 + [0] * 2,
+                    [1] * 6 + [0] * 0,
+                ]
+            ),
+            None,
+            3,
+            1,
+            5,
+            torch.float,
+            torch.tensor(
+                [
+                    [
+                        [0.0] * 5 + [torch.finfo(torch.float).min] * 1,
+                    ],
+                    [
+                        [0.0] * 4 + [torch.finfo(torch.float).min] * 2,
+                    ],
+                    [[0.0] * 6],
+                ],
+            ).unsqueeze(1),
+        ),
+        (
+            torch.tensor(
+                [
+                    [1] * 5 + [0] * 1,
+                    [1] * 4 + [0] * 2,
+                    [1] * 6 + [0] * 0,
+                ]
+            ),
+            None,
+            3,
+            1,
+            5,
+            torch.float16,
+            torch.tensor(
+                [
+                    [
+                        [0.0] * 5 + [torch.finfo(torch.float16).min] * 1,
+                    ],
+                    [
+                        [0.0] * 4 + [torch.finfo(torch.float16).min] * 2,
+                    ],
+                    [[0.0] * 6],
+                ],
+            ).unsqueeze(1),
+        ),
+        (
+            torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            torch.tensor(
+                [
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            1,
+            10,
+            torch.float,
+            torch.tensor(
+                [
+                    [
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                    ],
+                    [[torch.finfo(torch.float).min] * 4 + [0.0] * 7],
+                    [
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                    ],
+                ]
+            ).unsqueeze(1),
+        ),
+        (
+            torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            torch.tensor(
+                [
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            1,
+            10,
+            torch.float16,
+            torch.tensor(
+                [
+                    [
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                    ],
+                    [[torch.finfo(torch.float16).min] * 4 + [0.0] * 7],
+                    [
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
                     ],
                 ]
             ).unsqueeze(1),
         ),
     ],
 )
-def test_make_video_causal_mask(video_causal_mask, attention_mask, dtype, expected):
-    assert _make_video_causal_mask(video_causal_mask, attention_mask, dtype).equal(
-        expected
-    )
+def test_prepare_decoder_attention_mask(
+    attention_mask,
+    video_causal_mask,
+    batch,
+    tgt_seq_len,
+    past_key_values_length,
+    dtype,
+    expected,
+):
+    assert _prepare_decoder_attention_mask(
+        attention_mask,
+        video_causal_mask,
+        batch,
+        tgt_seq_len,
+        past_key_values_length,
+        torch.device("cpu"),
+        dtype,
+    ).equal(expected)
 
 
 @pytest.mark.parametrize("output_hidden_states", [True, False])
