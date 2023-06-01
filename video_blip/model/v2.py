@@ -686,6 +686,32 @@ class VideoT5ForConditionalGeneration(T5ForConditionalGeneration):
             encoder_attentions=encoder_outputs.attentions,  # type: ignore
         )
 
+    def prepare_inputs_for_generation(
+        self,
+        input_ids,
+        past_key_values=None,
+        attention_mask=None,
+        head_mask=None,
+        decoder_head_mask=None,
+        cross_attn_head_mask=None,
+        use_cache=None,
+        encoder_outputs=None,
+        video_causal_mask=None,
+        **kwargs,
+    ):
+        inputs = super().prepare_inputs_for_generation(
+            input_ids,
+            past_key_values=past_key_values,
+            attention_mask=attention_mask,
+            head_mask=head_mask,
+            decoder_head_mask=decoder_head_mask,
+            cross_attn_head_mask=cross_attn_head_mask,
+            use_cache=use_cache,
+            encoder_outputs=encoder_outputs,
+        )
+        inputs["video_causal_mask"] = video_causal_mask
+        return inputs
+
 
 class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
     def __init__(self, config: Blip2Config) -> None:
