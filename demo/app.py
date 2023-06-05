@@ -1,10 +1,14 @@
 import argparse
 import string
+from collections.abc import Callable
 from functools import partial
 from pathlib import Path
 
 import gradio as gr
 import torch
+from lavis.common.registry import registry
+from lavis.models import load_preprocess
+from omegaconf import OmegaConf
 from pytorchvideo.data.video import VideoPathHandler
 from transformers import Blip2Processor
 
@@ -12,10 +16,76 @@ from video_blip.model.utils import process
 from video_blip.model.v1 import VideoBlipForConditionalGeneration
 
 
-@torch.no_grad()
-def respond(
+def load_lavis_model_and_preprocess(
+    name: str, model_type: str, is_eval: bool = False, device: str = "cpu", **kwargs
+):
+    model_cls = registry.get_model_class(name)
+    cfg = OmegaConf.load(model_cls.default_config_path(model_type))
+    model_cfg = cfg.model
+    model_cfg.update(**kwargs)
+    model = model_cls.from_config(model_cfg)
+    if is_eval:
+        model.eval()
+    if device == "cpu" or device == torch.device("cpu"):
+        model = model.float()
+    model = model.to(device)
+
+    vis_processors, txt_processors = load_preprocess(cfg.preprocess)
+
+    return model, vis_processors, txt_processors
+
+
+def generate_hf(
     model: VideoBlipForConditionalGeneration,
     processor: Blip2Processor,
+    frames: torch.Tensor,
+    text: str,
+    num_beams: int,
+    max_new_tokens: int,
+    temperature: float,
+) -> str:
+    # process the inputs
+    inputs = process(processor, video=frames, text=text).to(model.device)
+    generated_ids = model.generate(
+        **inputs,
+        num_beams=num_beams,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_p=0.9,
+        repetition_penalty=1.5
+    )
+    return processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+
+
+def generate_lavis(
+    model,
+    eval_vis_processor,
+    frames: torch.Tensor,
+    text: str,
+    num_beams: int,
+    max_new_tokens: int,
+    temperature: float,
+) -> str:
+    # process the video frames
+    if frames.dim() == 4:
+        frames = frames.unsqueeze(0)
+    batch, channel, time, _, _ = frames.size()
+    frames = frames.permute(0, 2, 1, 3, 4).flatten(end_dim=1)
+    frames = eval_vis_processor(frames).to(model.device)
+    _, _, height, weight = frames.size()
+    frames = frames.view(batch, time, channel, height, weight).permute(0, 2, 1, 3, 4)
+
+    return model.generate(
+        {"image": frames, "prompt": text},
+        max_length=len(text) + max_new_tokens,
+        num_beams=num_beams,
+        temperature=temperature,
+    )[0]
+
+
+@torch.no_grad()
+def respond(
+    generate_fn: Callable[[torch.Tensor, str, int, int, float], str],
     video_path_handler: VideoPathHandler,
     video_path: str,
     message: str,
@@ -36,16 +106,9 @@ def respond(
     context = context.strip()
 
     # process the inputs
-    inputs = process(processor, video=frames, text=context).to(model.device)
-    generated_ids = model.generate(
-        **inputs,
-        num_beams=num_beams,
-        max_new_tokens=max_new_tokens,
-        temperature=temperature
+    generated_text = generate_fn(
+        frames, context, num_beams, max_new_tokens, temperature
     )
-    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[
-        0
-    ].strip()
 
     # if the last character of the generated text is not a punctuation, add a period
     if generated_text[-1] not in string.punctuation:
@@ -58,8 +121,7 @@ def respond(
 
 
 def construct_demo(
-    model: VideoBlipForConditionalGeneration,
-    processor: Blip2Processor,
+    generate_fn: Callable[[torch.Tensor, str, int, int, float], str],
     video_path_handler: VideoPathHandler,
 ) -> gr.Blocks:
     with gr.Blocks() as demo:
@@ -91,7 +153,7 @@ def construct_demo(
                     chatbot = gr.Chatbot()
                     with gr.Row():
                         respond_partial = partial(
-                            respond, model, processor, video_path_handler
+                            respond, generate_fn, video_path_handler
                         )
                         with gr.Column(scale=0.85):
                             chat_input = gr.Textbox(
@@ -164,13 +226,30 @@ if __name__ == "__main__":
     parser.add_argument("--queue", action="store_true", default=False)
     parser.add_argument("--concurrency-count", type=int, default=1)
     parser.add_argument("--max-size", type=int, default=10)
+    parser.add_argument("--lavis-llm-model", default=None)
     args = parser.parse_args()
 
-    processor = Blip2Processor.from_pretrained(args.model)
-    model = VideoBlipForConditionalGeneration.from_pretrained(args.model).to(
-        args.device
-    )
-    demo = construct_demo(model, processor, VideoPathHandler())
+    if args.model.startswith("lavis:"):
+        assert args.lavis_llm_model is not None
+        _, name, model_type = args.model.split(":")
+        model, vis_processors, _ = load_lavis_model_and_preprocess(
+            name,
+            model_type,
+            is_eval=True,
+            device=args.device,
+            llm_model=args.lavis_llm_model,
+        )
+        # HACK: delete ToTensor() transform b/c VideoPathHandler already gives us
+        # tensors.
+        del vis_processors["eval"].transform.transforms[-2]
+        generate_fn = partial(generate_lavis, model, vis_processors["eval"])
+    else:
+        processor = Blip2Processor.from_pretrained(args.model)
+        model = VideoBlipForConditionalGeneration.from_pretrained(args.model).to(
+            args.device
+        )
+        generate_fn = partial(generate_hf, model, processor)
+    demo = construct_demo(generate_fn, VideoPathHandler())
     if args.queue:
         demo.queue(
             concurrency_count=args.concurrency_count,
