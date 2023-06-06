@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class NarratedActionClipSampler(ClipSampler):
-    def __init__(self, random: bool = True) -> None:
+    def __init__(self, random: bool) -> None:
         """The vast majority of narrated actions are 8 seconds long, and none
         are longer.
 
@@ -98,7 +98,7 @@ class Ego4dFHOMainDataset(LabeledVideoDataset):
         split_path: str,
         video_dir_path: str,
         transform: Callable[[dict], Any] | None = None,
-        random_clip: bool = True,
+        random_clip: bool = False,
     ) -> None:
         """
         :param annotation_path: path to the main annotation file, e.g., `fho_main.json`.
@@ -152,7 +152,7 @@ class Ego4dFHOMainDataset(LabeledVideoDataset):
                 )
                 for video_uid in split_data["videos"]
             ],
-            NarratedActionClipSampler(random=random_clip),
+            NarratedActionClipSampler(random_clip),
             transform=_transform,
             decode_audio=False,
         )

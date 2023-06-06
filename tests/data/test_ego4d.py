@@ -12,7 +12,7 @@ def reverse(x: list[int]) -> None:
 
 @patch("video_blip.data.ego4d.random.shuffle", new=reverse)
 def test_narrated_action_clip_sampler_random() -> None:
-    clip_sampler = NarratedActionClipSampler()
+    clip_sampler = NarratedActionClipSampler(True)
     annotation_1 = {
         "narrated_actions": [
             {"narration_timestamp_sec": 2},
@@ -61,7 +61,7 @@ def test_narrated_action_clip_sampler_random() -> None:
 
 
 def test_narrated_action_clip_sampler() -> None:
-    clip_sampler = NarratedActionClipSampler(random=False)
+    clip_sampler = NarratedActionClipSampler(False)
     annotation_1 = {
         "narrated_actions": [
             {"narration_timestamp_sec": 2},
