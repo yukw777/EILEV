@@ -1,3 +1,4 @@
+import random
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import partial
@@ -18,7 +19,20 @@ from video_blip.data.utils import (
 )
 from video_blip.model.v2 import VideoBlipForConditionalGeneration
 
-PROMPT = "Question: What is the camera wearer doing? Answer:"
+# Based on prompts from InstructBLIP
+PROMPTS = [
+    "What is the camera wearer doing?",
+    "Question: What is the camera wearer doing?",
+    "What is the camera wearer doing? An answer to the question is",
+    "Q: What is the camera wearer doing? A:",
+    "Given the video, answer the following question. What is the camera wearer doing?",
+    "Based on the video, respond to this question: What is the camera wearer doing? "
+    "Answer:",
+    "Use the provided video to answer the question: What is the camera wearer doing?",
+    'What is the answer to the following question? "What is the camera wearer doing?"',
+    'The question "What is the camera wearer doing?" can be answered using the video. '
+    "The answer is",
+]
 
 
 def preprocess(
@@ -31,7 +45,7 @@ def preprocess(
         cleaned_narration_texts.append(clean_narration_text(item["narration_text"]))
     preprocessed = generate_input_ids_and_labels_from_interleaved(
         processor.tokenizer,
-        [PROMPT for _ in range(len(datapoint["items"]))],
+        [random.choice(PROMPTS) for _ in range(len(datapoint["items"]))],
         cleaned_narration_texts,
         len(datapoint["items"]),
         [[i] for i in range(len(datapoint["items"]))],
