@@ -179,8 +179,10 @@ def add_files(
         # add the file to the chat history
         chat_history.append([(file_name,), None])
 
-        # process only the first 10 seconds
-        clip = video_path_handler.video_from_path(file_name).get_clip(0, 10)
+        # process only the first 8 seconds if the video is longer than 8 seconds
+        video = video_path_handler.video_from_path(file_name)
+        end_sec = min(video.duration, 8)
+        clip = video.get_clip(0, end_sec)
 
         frames = subsampler(clip["video"])
 
@@ -220,9 +222,8 @@ def construct_demo(
             with gr.Column():
                 gr.Markdown(
                     """**Limitations**
-- Please upload only short videos (around 10 seconds) as we have limited computational resources.
-- Due to computational limits, VideoBLIP only processes the first 10 seconds of the uploaded videos.
-- Videos are assumed to be 30 FPS.
+- Please upload only short videos (around 8 seconds) as we have limited computational resources.
+- Due to computational limits, VideoBLIP only processes the first 8 seconds of the uploaded videos.
 - If you use a non-instruction-tuned LLM backbone, it may not be able to perform multi-turn dialogues.
 - If you still want to chat with a non-instruction-tuned LLM backbone, try formatting your input as \"Question: {} Answer: \""""  # noqa: E501
                 )
