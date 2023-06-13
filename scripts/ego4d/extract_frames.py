@@ -8,9 +8,12 @@ from typing import Any
 import imageio.v3 as iio
 import numpy as np
 import torch
+from torchvision.transforms import Compose, Resize
+from torchvision.transforms.functional import InterpolationMode
 from pytorchvideo.transforms import UniformTemporalSubsample
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from transformers import Blip2Config
 
 from video_blip.data.ego4d import Ego4dFHOMainDataset
 
@@ -19,6 +22,7 @@ parser.add_argument("--fho_main_path", required=True)
 parser.add_argument("--split_path", required=True)
 parser.add_argument("--video_dir", required=True)
 parser.add_argument("--frames_dir", required=True)
+parser.add_argument("--model_name_or_path", required=True)
 parser.add_argument("--num_subsample_frames", type=int, required=True)
 parser.add_argument("--num_workers", type=int, default=0)
 parser.add_argument("--max_num_narrated_actions", type=int, default=0)
@@ -54,11 +58,31 @@ def transform(
     return {"pixel_values": pixel_values, **item}
 
 
+config = Blip2Config.from_pretrained(args.model_name_or_path)
+
 dataset = Ego4dFHOMainDataset(
     args.fho_main_path,
     args.split_path,
     args.video_dir,
-    transform=partial(transform, UniformTemporalSubsample(args.num_subsample_frames)),
+    transform=partial(
+        transform,
+        Compose(
+            [
+                UniformTemporalSubsample(args.num_subsample_frames),
+                Resize(
+                    (
+                        # we resize to 2x of the vision model image size
+                        # since we will be using RandomResizedCrop with
+                        # min_scale=0.5 and max_scale=2.0
+                        config.vision_config.image_size * 2,
+                        config.vision_config.image_size * 2,
+                    ),
+                    interpolation=InterpolationMode.BICUBIC,
+                    antialias=True,
+                ),
+            ]
+        ),
+    ),
     random_clip=False,
 )
 
