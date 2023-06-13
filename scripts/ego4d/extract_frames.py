@@ -10,9 +10,7 @@ import numpy as np
 import torch
 from pytorchvideo.transforms import UniformTemporalSubsample
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose
 from tqdm import tqdm
-from transformers import Blip2Processor
 
 from video_blip.data.ego4d import Ego4dFHOMainDataset
 
@@ -21,7 +19,6 @@ parser.add_argument("--fho_main_path", required=True)
 parser.add_argument("--split_path", required=True)
 parser.add_argument("--video_dir", required=True)
 parser.add_argument("--frames_dir", required=True)
-parser.add_argument("--model_name_or_path", required=True)
 parser.add_argument("--num_subsample_frames", type=int, required=True)
 parser.add_argument("--num_workers", type=int, default=0)
 parser.add_argument("--max_num_narrated_actions", type=int, default=0)
@@ -48,22 +45,12 @@ def process_narrated_action(
     return frame_path
 
 
-processor = Blip2Processor.from_pretrained(args.model_name_or_path)
-
-
 def transform(
-    processor: Blip2Processor,
     video_transform: Callable[[torch.Tensor], torch.Tensor],
     item: dict[str, Any],
 ) -> dict[str, torch.Tensor]:
     pixel_values = item.pop("video")
     pixel_values = video_transform(pixel_values)
-
-    # run pixel_values through the image processor
-    pixel_values = processor.image_processor(
-        pixel_values.permute(1, 0, 2, 3), return_tensors="pt"
-    )["pixel_values"].permute(1, 0, 2, 3)
-
     return {"pixel_values": pixel_values, **item}
 
 
@@ -71,11 +58,7 @@ dataset = Ego4dFHOMainDataset(
     args.fho_main_path,
     args.split_path,
     args.video_dir,
-    transform=partial(
-        transform,
-        processor,
-        Compose([UniformTemporalSubsample(args.num_subsample_frames)]),
-    ),
+    transform=partial(transform, UniformTemporalSubsample(args.num_subsample_frames)),
     random_clip=False,
 )
 
