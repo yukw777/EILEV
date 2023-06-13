@@ -65,16 +65,16 @@ Once you have the `fho` benchmark data from Ego4D, run the following commands to
 
 ```bash
 # First split train and validation data
-python scripts/split_train_val.py \
+python scripts/ego4d/split_train_val_test.py \
     path/to/ego4d/v2/annotations/fho_main.json \
     path/to/extracted/frames \
     path/to/ego4d/v2/full_scale
 
 # Extract frames
-SPLIT=(train|val)
+SPLIT=(train|val|test)
 MODEL=<your-base-blip2-model> # e.g., Salesforce/blip2-opt-2.7b
 SUBSAMPLE_FRAMES=8
-python scripts/extract_frames.py \
+python scripts/ego4d/extract_frames.py \
     --fho_main_path path/to/ego4d/v2/annotations/fho_main.json \
     --split_path path/to/extracted/frames/fho_main_${SPLIT}.json \
     --video_dir path/to/ego4d/v2/full_scale \
@@ -86,7 +86,7 @@ python scripts/extract_frames.py \
 
 **3. Train**
 
-*v1*
+_v1_
 
 - `kpyu/video-blip-opt-2.7b-ego4d`
 
