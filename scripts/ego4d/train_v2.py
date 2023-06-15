@@ -6,9 +6,21 @@ from typing import Any
 
 import torch
 import transformers
-from pytorchvideo.transforms import UniformTemporalSubsample
-from torchvision.transforms import Compose
-from transformers import Blip2Processor
+from pytorchvideo.transforms import (
+    UniformTemporalSubsample,
+    RandomResizedCrop,
+    RandAugment,
+    Normalize,
+    Permute,
+    ConvertUint8ToFloat,
+)
+from torchvision.transforms import (
+    Compose,
+    RandomHorizontalFlip,
+    Resize,
+)
+from torchvision.transforms.functional import InterpolationMode
+from transformers import PreTrainedTokenizer
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 from video_blip.data.ego4d import Ego4dFHOMainFrameInterleavedDataset
@@ -36,7 +48,7 @@ PROMPTS = [
 
 
 def preprocess(
-    processor: Blip2Processor,
+    tokenizer: PreTrainedTokenizer,
     datapoint: dict[str, Any],
     video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, torch.Tensor]:
@@ -44,7 +56,7 @@ def preprocess(
     for item in datapoint["items"]:
         cleaned_narration_texts.append(clean_narration_text(item["narration_text"]))
     preprocessed = generate_input_ids_and_labels_from_interleaved(
-        processor.tokenizer,
+        tokenizer,
         [random.choice(PROMPTS) for _ in range(len(datapoint["items"]))],
         cleaned_narration_texts,
         len(datapoint["items"]),
@@ -109,9 +121,31 @@ def train() -> None:
         num_videos_per_sample=data_args.num_videos_per_sample,
         transform=partial(
             preprocess,
-            processor,
+            processor.tokenizer,
             video_transform=Compose(
-                [UniformTemporalSubsample(model_args.num_subsample_frames)]
+                [
+                    UniformTemporalSubsample(model_args.num_subsample_frames),
+                    # close to BlipImageTrainProcessor from LAVIS
+                    Permute((1, 0, 2, 3)),
+                    # pytorch_video's RandAugment doesn't allow you to pick
+                    # augmentations, so it performs more augmentations than used by
+                    # BlipImageTrainProcessor.
+                    RandAugment(magnitude=5),
+                    Permute((1, 0, 2, 3)),
+                    ConvertUint8ToFloat(),
+                    Normalize(
+                        processor.image_processor.image_mean,
+                        processor.image_processor.image_std,
+                    ),
+                    RandomResizedCrop(
+                        processor.image_processor.size["height"],
+                        processor.image_processor.size["width"],
+                        (0.5, 1.0),
+                        (3.0 / 4.0, 4.0 / 3.0),
+                        interpolation="bicubic",
+                    ),
+                    RandomHorizontalFlip(),
+                ]
             ),
         ),
     )
@@ -120,9 +154,25 @@ def train() -> None:
         num_videos_per_sample=data_args.num_videos_per_sample,
         transform=partial(
             preprocess,
-            processor,
+            processor.tokenizer,
             video_transform=Compose(
-                [UniformTemporalSubsample(model_args.num_subsample_frames)]
+                [
+                    UniformTemporalSubsample(model_args.num_subsample_frames),
+                    # Same as BlipImageProcessor from Hugging Face
+                    Resize(
+                        (
+                            processor.image_processor.size["height"],
+                            processor.image_processor.size["width"],
+                        ),
+                        interpolation=InterpolationMode.BICUBIC,
+                        antialias=True,
+                    ),
+                    ConvertUint8ToFloat(),
+                    Normalize(
+                        processor.image_processor.image_mean,
+                        processor.image_processor.image_std,
+                    ),
+                ]
             ),
         ),
     )
