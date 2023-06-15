@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import torch
 from collections import defaultdict
 from collections.abc import Callable
 from csv import DictReader
@@ -130,9 +131,14 @@ class Ego4dFHOMainDataset(LabeledVideoDataset):
         self.num_narrated_actions = sum(split_data["videos"].values())
 
         def _transform(item: dict) -> Any:
-            """The first transform function that formats `narrated_actions`."""
+            """The first transform function that formats `narrated_actions`
+            and `video`."""
+            # format narrated_actions
             narrated_actions = item.pop("narrated_actions")
             item.update(narrated_actions[item["clip_index"]])
+
+            # turn video tensor to torch.uint8
+            item["video"] = item["video"].to(torch.uint8)
             if transform is not None:
                 item = transform(item)
             return item
@@ -198,7 +204,10 @@ class Ego4dFHOMainFrameDataset(Dataset[dict[str, Any]]):
         # just get the whole video since the clip is already extracted
         clip = video.get_clip(0, video.duration)
 
-        item = {"video": clip["video"], "narration_text": datapoint["narration_text"]}
+        item = {
+            "video": clip["video"].to(torch.uint8),
+            "narration_text": datapoint["narration_text"],
+        }
 
         if self._transform is not None:
             item = self._transform(item)
@@ -208,7 +217,7 @@ class Ego4dFHOMainFrameDataset(Dataset[dict[str, Any]]):
         return len(self.data)
 
 
-class Ego4dFHOMainFrameInterleavedDataset:
+class Ego4dFHOMainFrameInterleavedDataset(Dataset[dict[str, Any]]):
     def __init__(
         self,
         narrated_actions_dir: str,
