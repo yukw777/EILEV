@@ -33,9 +33,9 @@ def respond(
     processor: Blip2Processor,
     state: State,
     chat_history: list[list[str | None | tuple]],
-    num_beams: int,
+    top_k: int,
     max_new_tokens: int,
-    temperature: float,
+    penalty_alpha: float,
 ) -> list[list[str | None | tuple]]:
     processed_texts: list[list[int]] = [
         processor.tokenizer(text_block, add_special_tokens=False).input_ids
@@ -66,10 +66,9 @@ def respond(
         .unsqueeze(0)
         .to(model.device),
         video_causal_mask=video_causal_mask.unsqueeze(0).to(model.device),  # type: ignore # noqa: E501
-        num_beams=num_beams,
         max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        do_sample=True,
+        penalty_alpha=penalty_alpha,
+        top_k=top_k,
     )
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[
         0
@@ -200,13 +199,13 @@ def construct_demo(
     processor: Blip2Processor,
     video_path_handler: VideoPathHandler,
 ) -> gr.Blocks:
-    num_beams = gr.Slider(
-        minimum=0, maximum=10, value=4, step=1, label="Number of beams"
-    )
+    top_k = gr.Slider(minimum=0, maximum=10, value=4, step=1, label="Top k")
     max_new_tokens = gr.Slider(
         minimum=20, maximum=256, value=128, label="Max new tokens"
     )
-    temp = gr.Slider(minimum=0.1, maximum=1.0, value=0.7, label="Temperature")
+    penalty_alpha = gr.Slider(
+        minimum=0.1, maximum=1.0, value=0.6, label="Penalty Alpha"
+    )
     with gr.Blocks() as demo:
         gr.Markdown("# VideoBLIP Demo")
         gr.Markdown("Have a multi-modal conversation with VideoBLIP!")
@@ -265,12 +264,12 @@ def construct_demo(
                 respond_button = gr.Button(value="Respond", variant="primary")
                 respond_button.click(
                     partial(respond, model, processor),
-                    inputs=[state, chatbot, num_beams, max_new_tokens, temp],
+                    inputs=[state, chatbot, top_k, max_new_tokens, penalty_alpha],
                     outputs=[chatbot],
                 )
-                num_beams.render()
+                top_k.render()
                 max_new_tokens.render()
-                temp.render()
+                penalty_alpha.render()
                 clear_button = gr.Button(value="Clear")
                 clear_button.click(
                     lambda: (State(), "", []),
