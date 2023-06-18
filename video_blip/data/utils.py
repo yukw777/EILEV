@@ -6,7 +6,10 @@ import torch
 import torch.nn.functional as F
 from transformers import BatchEncoding, DataCollatorForSeq2Seq, PreTrainedTokenizer
 
-C_REGEX = re.compile(r"^\#C C", re.IGNORECASE)
+C_REGEX = re.compile(r"^\#C\s+C", re.IGNORECASE)
+EOS_REGEX = re.compile(r"\<\|eos\|\>$", re.IGNORECASE)
+UNSURE_END_REGEX = re.compile(r"#unsure\.?$", re.IGNORECASE)
+UNSURE_MIDDLE_REGEX = re.compile(r"#unsure", re.IGNORECASE)
 
 
 class DataCollatorForVideoSeq2Seq(DataCollatorForSeq2Seq):
@@ -52,7 +55,18 @@ def clean_narration_text(narration_text: str) -> str:
     cleaned = narration_text.strip()
 
     # replace "#C C" with "The camera wearer"
-    return re.sub(C_REGEX, "The camera wearer", cleaned)
+    cleaned = re.sub(C_REGEX, "The camera wearer", cleaned).strip()
+
+    # remove <|eos|>
+    cleaned = re.sub(EOS_REGEX, "", cleaned).strip()
+
+    # remove #unsure from the end
+    cleaned = re.sub(UNSURE_END_REGEX, "", cleaned).strip()
+
+    # replace #unsure in the middle with "something"
+    cleaned = re.sub(UNSURE_MIDDLE_REGEX, "something", cleaned)
+
+    return cleaned
 
 
 def generate_input_ids_and_labels(

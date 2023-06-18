@@ -19,6 +19,31 @@ from video_blip.data.utils import (
         ("#C C drops a plate ", "The camera wearer drops a plate"),
         ("#c C drops a plate", "The camera wearer drops a plate"),
         ("#C c drops a plate", "The camera wearer drops a plate"),
+        (
+            "#C  C adjusts the screw in the machine with the screwdriver. #Unsure."
+            "<|eos|>",
+            "The camera wearer adjusts the screw in the machine with the screwdriver.",
+        ),
+        (
+            "#C C drops #unsure on the countertop<|eos|>",
+            "The camera wearer drops something on the countertop",
+        ),
+        (
+            "#C C touches his face with his right hand. #Unsure.\n<|eos|>",
+            "The camera wearer touches his face with his right hand.",
+        ),
+        (
+            "#C C fixes the wire into the piston. #unsure.<|eos|>",
+            "The camera wearer fixes the wire into the piston.",
+        ),
+        (
+            "#C C fixes the wire into the piston. #unsure<|eos|>",
+            "The camera wearer fixes the wire into the piston.",
+        ),
+        (
+            "#C C pours cooking pots #Unsure on the        <|eos|>",
+            "The camera wearer pours cooking pots something on the",
+        ),
     ],
 )
 def test_clean_narration_text(narration_text: str, cleaned: str) -> None:
