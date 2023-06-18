@@ -8,10 +8,10 @@ from typing import Any
 import imageio.v3 as iio
 import numpy as np
 import torch
-from torchvision.transforms import Compose, Resize
-from torchvision.transforms.functional import InterpolationMode
 from pytorchvideo.transforms import UniformTemporalSubsample
 from torch.utils.data import DataLoader
+from torchvision.transforms import Compose, Resize
+from torchvision.transforms.functional import InterpolationMode
 from tqdm import tqdm
 from transformers import Blip2Config
 

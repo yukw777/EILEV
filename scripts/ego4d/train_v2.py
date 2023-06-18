@@ -7,18 +7,14 @@ from typing import Any
 import torch
 import transformers
 from pytorchvideo.transforms import (
-    UniformTemporalSubsample,
-    RandomResizedCrop,
-    RandAugment,
+    ConvertUint8ToFloat,
     Normalize,
     Permute,
-    ConvertUint8ToFloat,
+    RandAugment,
+    RandomResizedCrop,
+    UniformTemporalSubsample,
 )
-from torchvision.transforms import (
-    Compose,
-    RandomHorizontalFlip,
-    Resize,
-)
+from torchvision.transforms import Compose, RandomHorizontalFlip, Resize
 from torchvision.transforms.functional import InterpolationMode
 from transformers import PreTrainedTokenizer
 from transformers.deepspeed import is_deepspeed_zero3_enabled

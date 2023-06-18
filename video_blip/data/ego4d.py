@@ -2,13 +2,13 @@ import json
 import logging
 import os
 import random
-import torch
 from collections import defaultdict
 from collections.abc import Callable
 from csv import DictReader
 from fractions import Fraction
 from typing import Any
 
+import torch
 from pytorchvideo.data import ClipSampler, LabeledVideoDataset
 from pytorchvideo.data.clip_sampling import ClipInfo
 from pytorchvideo.data.video import VideoPathHandler
@@ -131,8 +131,8 @@ class Ego4dFHOMainDataset(LabeledVideoDataset):
         self.num_narrated_actions = sum(split_data["videos"].values())
 
         def _transform(item: dict) -> Any:
-            """The first transform function that formats `narrated_actions`
-            and `video`."""
+            """The first transform function that formats `narrated_actions` and
+            `video`."""
             # format narrated_actions
             narrated_actions = item.pop("narrated_actions")
             item.update(narrated_actions[item["clip_index"]])
