@@ -1409,3 +1409,58 @@ def test_v2_video_blip_for_cond_gen_generate(
         **generate_kwargs
     )
     assert generated_ids.size() == (batch, max_length)
+
+
+@pytest.mark.parametrize("seq_len", [1, 16])
+@pytest.mark.parametrize("time", [1, 8])
+@pytest.mark.parametrize("num_videos", [1, 5])
+@pytest.mark.parametrize("num_classes", [1, 4])
+@pytest.mark.parametrize(
+    "config",
+    [
+        Blip2Config(
+            vision_config={
+                "hidden_size": 8,
+                "intermediate_size": 16,
+                "projection_dim": 4,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 4,
+                "patch_size": 8,
+            },
+            qformer_config={
+                "hidden_size": 8,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 2,
+                "intermediate_size": 16,
+                "encoder_hidden_size": 8,
+            },
+            text_config={
+                "model_type": "opt",
+                "hidden_size": 8,
+                "num_hidden_layers": 2,
+                "ffn_dim": 16,
+                "num_attention_heads": 2,
+            },
+            num_query_tokens=4,
+        ),
+    ],
+)
+def test_v2_video_blip_for_cond_gen_classify(
+    config, num_classes, num_videos, time, seq_len
+):
+    model = VideoBlipForConditionalGeneration(config)
+    log_likelihood = model.classify(
+        torch.rand(
+            num_videos,
+            # channel is pretty much always 3
+            3,
+            time,
+            config.vision_config.image_size,
+            config.vision_config.image_size,
+        ),
+        torch.ones(num_classes, seq_len).long(),
+        torch.ones(num_classes, seq_len).long(),
+        torch.ones(num_classes, seq_len).long(),
+        torch.ones(num_classes, seq_len, num_videos).long(),
+    )
+    assert log_likelihood.size() == (num_classes,)

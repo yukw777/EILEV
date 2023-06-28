@@ -783,3 +783,109 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         )
 
         return outputs
+
+    @torch.no_grad()
+    def classify(
+        self,
+        pixel_values: torch.Tensor,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        labels: torch.Tensor,
+        video_causal_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+
+        :param pixel_values: tensor of shape
+            (num_videos, channel, time, height, width)
+        :param input_ids: tensor of shape (num_classes, seq_len)
+        :param attention_mask: tensor of shape (num_classes, seq_len)
+        :param labels: tensor of shape (num_classes, seq_len)
+        :param video_causal_mask: tensor of shape (num_classes, seq_len, num_videos)
+        :return: log likelihoods for the classes
+        """
+
+        # step 1: forward the images through the vision encoder
+        # to get image embeddings of shape
+        # (1, num_videos, time * vision_seq_len, vision_hidden_size)
+        image_embeds = self.vision_model(
+            pixel_values.unsqueeze(0), return_dict=True
+        ).last_hidden_state
+
+        # step 2: forward the query tokens through the QFormer,
+        # using the image embeddings for cross-attention
+        # (1 * num_videos, time * vision_seq_len, vision_hidden_size)
+        image_embeds = image_embeds.flatten(end_dim=1)
+        image_attention_mask = torch.ones(
+            image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
+        )
+
+        query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
+        query_outputs = self.qformer(
+            query_embeds=query_tokens,
+            encoder_hidden_states=image_embeds,
+            encoder_attention_mask=image_attention_mask,
+            return_dict=True,
+        )
+        # (1 * num_videos, num_query_tokens, qformer_hidden_size)
+        query_output = query_outputs.last_hidden_state
+
+        # step 3: use the language model, conditioned on the query outputs and
+        # the prompt
+        num_videos, _, _, _, _ = pixel_values.size()
+        num_classes, _ = input_ids.size()
+        # (num_classes, num_videos * num_query_tokens, qformer_hidden_size)
+        language_model_inputs = self.language_projection(
+            query_output.view(1, num_videos * self.config.num_query_tokens, -1)
+        ).expand(num_classes, -1, -1)
+        # (num_classes, num_videos * num_query_tokens)
+        language_model_attention_mask = torch.ones(
+            language_model_inputs.size()[:-1],
+            dtype=torch.long,
+            device=language_model_inputs.device,
+        )
+        attention_mask = torch.cat(
+            [
+                language_model_attention_mask,
+                attention_mask.to(language_model_inputs.device),  # type: ignore
+            ],
+            dim=1,
+        )
+        inputs_embeds = self.language_model.get_input_embeddings()(
+            input_ids.to(self.language_model.device)
+        )
+        # (num_classes, num_videos * num_query_tokens + num_tokens, qformer_hidden_size)
+        inputs_embeds = torch.cat(
+            [language_model_inputs, inputs_embeds.to(language_model_inputs.device)],
+            dim=1,
+        )
+
+        video_causal_mask = video_causal_mask.to(  # type: ignore
+            language_model_inputs.device
+        ).repeat_interleave(self.config.num_query_tokens, dim=2)
+
+        outputs = self.language_model(
+            inputs_embeds=inputs_embeds,
+            attention_mask=attention_mask,
+            video_causal_mask=video_causal_mask,
+            return_dict=True,
+        )
+
+        # (num_classes, num_tokens, hidden)
+        logits = outputs.logits[:, -labels.size(1) :, :]
+        # Shift so that tokens < n predict n
+        # (num_classes, num_tokens - 1, hidden)
+        shift_logits = logits[..., :-1, :].contiguous()
+        # (num_classes, num_tokens - 1)
+        shift_labels = labels[..., 1:].contiguous().to(logits.device)
+
+        loss_fct = nn.CrossEntropyLoss(reduction="none")
+
+        # (num_classes, num_tokens - 1)
+        loss = loss_fct(
+            shift_logits.view(-1, self.config.text_config.vocab_size),
+            shift_labels.view(-1),
+        ).view(num_classes, -1)
+
+        # return the mean log likelihood
+        # (num_classes)
+        return -loss.mean(dim=1)
