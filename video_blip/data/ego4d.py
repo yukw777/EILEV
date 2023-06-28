@@ -178,7 +178,8 @@ class Ego4dFHOMainFrameDataset(Dataset[dict[str, Any]]):
     def __init__(
         self,
         narrated_actions_dir: str,
-        transform: Callable[[dict], Any] | None = None,
+        transform: Callable[[dict[str, Any]], Any] | None = None,
+        data_filter: Callable[[dict[str, Any]], bool] | None = None,
     ) -> None:
         """
         :param narrated_actions_dir: path to dir that contains narrated_actions.csv
@@ -191,6 +192,8 @@ class Ego4dFHOMainFrameDataset(Dataset[dict[str, Any]]):
         ) as csvfile:
             csvreader = DictReader(csvfile)
             for row in csvreader:
+                if data_filter is not None and not data_filter(row):
+                    continue
                 self.data.append(row)
 
         self._video_path_handler = VideoPathHandler()
