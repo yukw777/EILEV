@@ -207,10 +207,7 @@ class Ego4dFHOMainFrameDataset(Dataset[dict[str, Any]]):
         # just get the whole video since the clip is already extracted
         clip = video.get_clip(0, video.duration)
 
-        item = {
-            "video": clip["video"].to(torch.uint8),
-            "narration_text": datapoint["narration_text"],
-        }
+        item = {"video": clip["video"].to(torch.uint8), **datapoint}
 
         if self._transform is not None:
             item = self._transform(item)
