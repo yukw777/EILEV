@@ -20,6 +20,7 @@ imageio = "^2.28.0"
 opencv-python = "^4.7.0.72"
 deepspeed = "^0.9.2"
 salesforce-lavis = {git = "git@github.com:salesforce/LAVIS.git", rev = "59273f6"}
+torchmetrics = "^0.11.4"
 
 [tool.poetry.group.dev]
 optional = true
@@ -58,3 +59,9 @@ ignore_missing_imports = true
 testpaths = [
     "tests"
 ]
+
+[tool.isort]
+# wandb by default creates a directory called "wandb"
+# which confuses isort, causing it to classify wandb
+# as a first-party library.
+known_third_party = ["wandb"]
