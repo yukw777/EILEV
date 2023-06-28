@@ -233,7 +233,7 @@ class VideoOPTDecoder(OPTDecoder):
         """
         src_seq_len = past_key_values_length + tgt_seq_len
         combined_attention_mask = torch.ones(
-            batch, tgt_seq_len, src_seq_len, device=device
+            batch, tgt_seq_len, src_seq_len, device=device, dtype=dtype
         )
         if tgt_seq_len > 1:
             if video_causal_mask is not None:
