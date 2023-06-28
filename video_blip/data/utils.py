@@ -119,67 +119,74 @@ def generate_input_ids_and_labels(
 
 def generate_input_ids_and_labels_from_interleaved(
     tokenizer: PreTrainedTokenizer,
-    prompts: list[str],
-    texts: list[str],
+    prompts_texts: list[tuple[str, str | None]],
     num_videos: int,
     text_video_map: list[list[int]],
+    append_eos: bool = True,
 ) -> dict[str, torch.Tensor]:
     """Generate input ids and labels from the given interleaved video/text data
-    point. We treat the last prompt and text as labels and the rest as the
-    context. `text_video_map` specifies which videos are the last preceding
+    point. `text_video_map` specifies which videos are the last preceding
     videos for a given text, and is used to generate `video_causal_mask`. Note
     that this is for autoregressive language modeling, so only decoder only LMs
     are supported.
 
     :param tokenizer: tokenizer for tokenizing inputs and label
-    :param prompts: list of prompt for the LLM
-    :param texts: list of texts for the LLM to generate based on the prompt
+    :param prompts_texts: list of tuples of prompts and texts. texts are for the LLM to
+        generate based on the prompts, and can be None if not needed.
     :param num_videos: number of videos in this interleaved data point
     :param text_video_map: map between texts and their last preceding videos.
         each text can have zero, one or more (if there are multiple consecutive videos
         preceding the text) last preceding videos.
     :param decoder_only_lm: whether the LLM is decoder only or not
+    :param append_eos: whether to append eos token at the end. Useful for training
     :returns: preprocessed results including `input_ids`, `labels` and
         `video_causal_mask`.
         `input_ids` is a tensor of shape (num_tokens),
         `labels` is a tensor of shape (num_tokens),
         `video_causal_mask` is a tensor of shape (num_tokens, num_videos)
     """
-    assert len(prompts) == len(texts)
-    assert len(text_video_map) == len(texts)
+    assert len(text_video_map) == len(prompts_texts)
 
-    processed_texts: list[BatchEncoding] = []
-    for i, (prompt, text) in enumerate(zip(prompts, texts)):
-        processed = generate_input_ids_and_labels(tokenizer, prompt, text, True)
+    input_ids: list[int] = []
+    labels: list[int] = []
+    video_causal_mask: list[torch.Tensor] = []
+    for i, (prompt, text) in enumerate(prompts_texts):
         if i != 0:
-            # if not first, remove bos
-            processed["input_ids"] = processed["input_ids"][1:]
-            processed["labels"] = processed["labels"][1:]
+            # if not first, add a space in front to separate from the previous prompt
+            # text pair.
+            prompt = " " + prompt
 
-        if i != len(texts) - 1:
-            # if not last, remove eos
-            processed["input_ids"] = processed["input_ids"][:-1]
-            processed["labels"] = processed["labels"][:-1]
-        processed_texts.append(processed)
+        # tokenize prompt
+        prompt_tokens = tokenizer(prompt, add_special_tokens=False).input_ids
+        if i == 0:
+            # if first, add a bos token
+            prompt_tokens = [tokenizer.bos_token_id] + prompt_tokens
 
-    video_causal_mask = torch.zeros(
-        sum(processed.input_ids.size(0) for processed in processed_texts),
-        num_videos,
-        dtype=torch.long,
-    )
-    start_token_index = 0
-    for i, video_indices in enumerate(text_video_map):
-        processed = processed_texts[i]
-        end_token_index = start_token_index + processed.input_ids.size(0)
-        video_causal_mask[start_token_index:end_token_index].index_fill_(
-            1, torch.tensor(video_indices), 1
-        )
-        start_token_index = end_token_index
+        # tokenize text with a space in front to separate it from the prompt
+        if text is None:
+            text_tokens = []
+        else:
+            text_tokens = tokenizer(" " + text, add_special_tokens=False).input_ids
+        if i == len(prompts_texts) - 1 and append_eos:
+            # append eos if last
+            text_tokens.append(tokenizer.eos_token_id)
+
+        input_ids.extend(prompt_tokens + text_tokens)
+        labels.extend([-100] * len(prompt_tokens) + text_tokens)
+
+        # build video_causal_mask
+        video_indices = text_video_map[i]
+        for _ in range(len(prompt_tokens + text_tokens)):
+            video_causal_mask.append(
+                torch.zeros(num_videos, dtype=torch.long).index_fill(
+                    0, torch.tensor(video_indices, dtype=torch.long), 1
+                )
+            )
 
     return {
-        "input_ids": torch.cat([processed.input_ids for processed in processed_texts]),
-        "labels": torch.cat([processed.labels for processed in processed_texts]),
-        "video_causal_mask": video_causal_mask,
+        "input_ids": torch.tensor(input_ids),
+        "labels": torch.tensor(labels),
+        "video_causal_mask": torch.stack(video_causal_mask),
     }
 
 

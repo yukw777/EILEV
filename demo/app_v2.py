@@ -10,6 +10,7 @@ from pytorchvideo.data.video import VideoPathHandler
 from pytorchvideo.transforms import UniformTemporalSubsample
 from transformers import Blip2Processor
 
+from video_blip.data.utils import generate_input_ids_and_labels_from_interleaved
 from video_blip.model.utils import process
 from video_blip.model.v2 import VideoBlipForConditionalGeneration
 
@@ -37,35 +38,19 @@ def respond(
     max_new_tokens: int,
     penalty_alpha: float,
 ) -> list[list[str | None | tuple]]:
-    processed_texts: list[list[int]] = [
-        processor.tokenizer(text_block, add_special_tokens=False).input_ids
-        for text_block in state.text_blocks
-    ]
-    # prepend bos token to the first text block
-    processed_texts[0] = [processor.tokenizer.bos_token_id] + processed_texts[0]
-    video_causal_mask = torch.zeros(
-        sum(len(processed) for processed in processed_texts),
+    inputs = generate_input_ids_and_labels_from_interleaved(
+        processor.tokenizer,
+        [(text_block, None) for text_block in state.text_blocks],
         len(state.videos),
-        dtype=torch.long,
+        state.text_block_video_map,
+        append_eos=False,
     )
-    start_token_index = 0
-    for i, video_indices in enumerate(state.text_block_video_map):
-        processed = processed_texts[i]
-        end_token_index = start_token_index + len(processed)
-        video_causal_mask[start_token_index:end_token_index].index_fill_(
-            1, torch.tensor(video_indices), 1
-        )
-        start_token_index = end_token_index
 
     # process the inputs
     generated_ids = model.generate(
         pixel_values=torch.stack(state.videos).unsqueeze(0).to(model.device),  # type: ignore # noqa: E501
-        input_ids=torch.tensor(  # type: ignore
-            [i for processed in processed_texts for i in processed]
-        )
-        .unsqueeze(0)
-        .to(model.device),
-        video_causal_mask=video_causal_mask.unsqueeze(0).to(model.device),  # type: ignore # noqa: E501
+        input_ids=inputs["input_ids"].unsqueeze(0).to(model.device),  # type: ignore
+        video_causal_mask=inputs["video_causal_mask"].unsqueeze(0).to(model.device),  # type: ignore # noqa: E501
         max_new_tokens=max_new_tokens,
         penalty_alpha=penalty_alpha,
         top_k=top_k,

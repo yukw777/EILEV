@@ -48,13 +48,12 @@ def preprocess(
     datapoint: dict[str, Any],
     video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, torch.Tensor]:
-    cleaned_narration_texts: list[str] = []
-    for item in datapoint["items"]:
-        cleaned_narration_texts.append(clean_narration_text(item["narration_text"]))
     preprocessed = generate_input_ids_and_labels_from_interleaved(
         tokenizer,
-        [random.choice(PROMPTS) for _ in range(len(datapoint["items"]))],
-        cleaned_narration_texts,
+        [
+            (random.choice(PROMPTS), clean_narration_text(item["narration_text"]))
+            for item in datapoint["items"]
+        ],
         len(datapoint["items"]),
         [[i] for i in range(len(datapoint["items"]))],
     )

@@ -96,17 +96,18 @@ def test_generate_input_ids_and_labels(
 
 
 @pytest.mark.parametrize(
-    "tokenizer,num_texts,num_videos,text_video_map,expected",
+    "tokenizer,prompts_texts,num_videos,text_video_map,expected",
     [
         (
             Mock(
                 side_effect=[
-                    BatchEncoding(data={"input_ids": [99, 1, 2, 3, 4]}),
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
                     BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
                 ],
+                bos_token_id=99,
                 eos_token_id=100,
             ),
-            1,
+            [("", "")],
             1,
             [[0]],
             {
@@ -117,13 +118,29 @@ def test_generate_input_ids_and_labels(
         ),
         (
             Mock(
-                side_effect=[
-                    BatchEncoding(data={"input_ids": [99, 1, 2, 3, 4]}),
-                    BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
-                ],
+                side_effect=[BatchEncoding(data={"input_ids": [1, 2, 3, 4]})],
+                bos_token_id=99,
                 eos_token_id=100,
             ),
+            [("", None)],
             1,
+            [[0]],
+            {
+                "input_ids": torch.tensor([99, 1, 2, 3, 4, 100]),
+                "labels": torch.tensor([-100, -100, -100, -100, -100, 100]),
+                "video_causal_mask": torch.ones(6, 1).long(),
+            },
+        ),
+        (
+            Mock(
+                side_effect=[
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
+                    BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
+                ],
+                bos_token_id=99,
+                eos_token_id=100,
+            ),
+            [("", "")],
             2,
             [[0, 1]],
             {
@@ -135,16 +152,34 @@ def test_generate_input_ids_and_labels(
         (
             Mock(
                 side_effect=[
-                    BatchEncoding(data={"input_ids": [99, 1, 2, 3, 4]}),
-                    BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
-                    BatchEncoding(data={"input_ids": [99, 5, 6, 7, 8]}),
-                    BatchEncoding(data={"input_ids": [8, 7, 6, 5]}),
-                    BatchEncoding(data={"input_ids": [99, 3, 4, 5, 6]}),
-                    BatchEncoding(data={"input_ids": [6, 5, 4, 3]}),
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
                 ],
+                bos_token_id=99,
                 eos_token_id=100,
             ),
-            3,
+            [("", None)],
+            2,
+            [[0, 1]],
+            {
+                "input_ids": torch.tensor([99, 1, 2, 3, 4, 100]),
+                "labels": torch.tensor([-100, -100, -100, -100, -100, 100]),
+                "video_causal_mask": torch.ones(6, 2).long(),
+            },
+        ),
+        (
+            Mock(
+                side_effect=[
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
+                    BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
+                    BatchEncoding(data={"input_ids": [5, 6, 7, 8]}),
+                    BatchEncoding(data={"input_ids": [8, 7, 6, 5]}),
+                    BatchEncoding(data={"input_ids": [3, 4, 5, 6]}),
+                    BatchEncoding(data={"input_ids": [6, 5, 4, 3]}),
+                ],
+                bos_token_id=99,
+                eos_token_id=100,
+            ),
+            [("", "")] * 3,
             3,
             [[0], [1], [2]],
             {
@@ -243,16 +278,17 @@ def test_generate_input_ids_and_labels(
         (
             Mock(
                 side_effect=[
-                    BatchEncoding(data={"input_ids": [99, 1, 2, 3, 4]}),
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
                     BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
-                    BatchEncoding(data={"input_ids": [99, 5, 6, 7, 8]}),
+                    BatchEncoding(data={"input_ids": [5, 6, 7, 8]}),
                     BatchEncoding(data={"input_ids": [8, 7, 6, 5]}),
-                    BatchEncoding(data={"input_ids": [99, 3, 4, 5, 6]}),
+                    BatchEncoding(data={"input_ids": [3, 4, 5, 6]}),
                     BatchEncoding(data={"input_ids": [6, 5, 4, 3]}),
                 ],
+                bos_token_id=99,
                 eos_token_id=100,
             ),
-            3,
+            [("", "")] * 3,
             5,
             [[0, 1], [2], [3, 4]],
             {
@@ -348,21 +384,145 @@ def test_generate_input_ids_and_labels(
                 ),
             },
         ),
+        (
+            Mock(
+                side_effect=[
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
+                    BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
+                    BatchEncoding(data={"input_ids": [5, 6, 7, 8]}),
+                    BatchEncoding(data={"input_ids": [8, 7, 6, 5]}),
+                ],
+                bos_token_id=99,
+                eos_token_id=100,
+            ),
+            [("", None), ("", None), ("", "")],
+            5,
+            [[0, 1], [2], [3, 4]],
+            {
+                "input_ids": torch.tensor(
+                    [99, 1, 2, 3, 4, 4, 3, 2, 1, 5, 6, 7, 8, 8, 7, 6, 5, 100]
+                ),
+                "labels": torch.tensor(
+                    [
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        8,
+                        7,
+                        6,
+                        5,
+                        100,
+                    ]
+                ),
+                "video_causal_mask": torch.tensor(
+                    [
+                        [1, 1, 0, 0, 0],
+                        [1, 1, 0, 0, 0],
+                        [1, 1, 0, 0, 0],
+                        [1, 1, 0, 0, 0],
+                        [1, 1, 0, 0, 0],
+                        [0, 0, 1, 0, 0],
+                        [0, 0, 1, 0, 0],
+                        [0, 0, 1, 0, 0],
+                        [0, 0, 1, 0, 0],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                        [0, 0, 0, 1, 1],
+                    ]
+                ),
+            },
+        ),
     ],
 )
 def test_generate_input_ids_and_labels_from_interleaved(
     tokenizer,
-    num_texts: int,
+    prompts_texts: list[tuple[str, str | None]],
     num_videos: int,
     text_video_map: list[list[int]],
     expected: dict[str, torch.Tensor],
 ) -> None:
     results = generate_input_ids_and_labels_from_interleaved(
+        tokenizer, prompts_texts, num_videos, text_video_map
+    )
+    assert results.keys() == expected.keys()
+    assert results["input_ids"].equal(expected["input_ids"])
+    assert results["labels"].equal(expected["labels"])
+    assert results["video_causal_mask"].equal(expected["video_causal_mask"])
+
+
+@pytest.mark.parametrize(
+    "tokenizer,num_texts,num_videos,text_video_map,append_eos,expected",
+    [
+        (
+            Mock(
+                side_effect=[
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
+                    BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
+                ],
+                bos_token_id=99,
+                eos_token_id=100,
+            ),
+            1,
+            2,
+            [[0, 1]],
+            True,
+            {
+                "input_ids": torch.tensor([99, 1, 2, 3, 4, 4, 3, 2, 1, 100]),
+                "labels": torch.tensor([-100, -100, -100, -100, -100, 4, 3, 2, 1, 100]),
+                "video_causal_mask": torch.ones(10, 2).long(),
+            },
+        ),
+        (
+            Mock(
+                side_effect=[
+                    BatchEncoding(data={"input_ids": [1, 2, 3, 4]}),
+                    BatchEncoding(data={"input_ids": [4, 3, 2, 1]}),
+                ],
+                bos_token_id=99,
+                eos_token_id=100,
+            ),
+            1,
+            2,
+            [[0, 1]],
+            False,
+            {
+                "input_ids": torch.tensor([99, 1, 2, 3, 4, 4, 3, 2, 1]),
+                "labels": torch.tensor([-100, -100, -100, -100, -100, 4, 3, 2, 1]),
+                "video_causal_mask": torch.ones(9, 2).long(),
+            },
+        ),
+    ],
+)
+def test_generate_input_ids_and_labels_from_interleaved_append_eos(
+    tokenizer,
+    num_texts: int,
+    num_videos: int,
+    text_video_map: list[list[int]],
+    append_eos: bool,
+    expected: dict[str, torch.Tensor],
+) -> None:
+    results = generate_input_ids_and_labels_from_interleaved(
         tokenizer,
-        [""] * num_texts,
-        [""] * num_texts,
+        list(zip([""] * num_texts, [""] * num_texts)),
         num_videos,
         text_video_map,
+        append_eos=append_eos,
     )
     assert results.keys() == expected.keys()
     assert results["input_ids"].equal(expected["input_ids"])
