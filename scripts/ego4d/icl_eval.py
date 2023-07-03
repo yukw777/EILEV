@@ -74,13 +74,10 @@ def add_and_filter_verb_noun(
 
 
 class Preprocessor:
-    def __init__(
-        self, processor: Blip2Processor, few_shot_prompt: str, eos_token_id: int
-    ) -> None:
+    def __init__(self, processor: Blip2Processor, few_shot_prompt: str) -> None:
         self.processor = processor
         self.collator = DataCollatorForInterleavedVideoSeq2Seq(processor.tokenizer)
         self.few_shot_prompt = few_shot_prompt
-        self.eos_token_id = eos_token_id
 
     def preprocess(
         self,
@@ -102,22 +99,20 @@ class Preprocessor:
             )
             for example in few_shot_examples
         ]
-        inputs_list = [
-            generate_input_ids_and_labels_from_interleaved(
-                self.processor.tokenizer,
-                self.eos_token_id,
-                few_shot_prompts + [(prompt, cls)],
-                len(few_shot_examples) + 1,
-                [[i] for i in range(len(few_shot_examples) + 1)],
-            )
-            for cls in classes
-        ]
-        # input_ids: (num_classes, seq_len)
-        # attention_mask: (num_classes, seq_len)
-        # labels: (num_classes, seq_len)
-        # video_causal_mask: (num_classes, seq_len, num_videos)
-        inputs = self.collator(inputs_list)
-
+        # input_ids: (prompt_seq_len)
+        # labels: (prompt_seq_len)
+        # video_causal_mask: (prompt_seq_len, num_videos)
+        prompt_inputs = generate_input_ids_and_labels_from_interleaved(
+            self.processor.tokenizer,
+            few_shot_prompts + [(prompt, None)],
+            len(few_shot_examples) + 1,
+            [[i] for i in range(len(few_shot_examples) + 1)],
+        )
+        # input_ids: (num_classes, class_seq_len)
+        # attention_mask: (num_classes, class_seq_len)
+        class_inputs = self.processor.tokenizer(
+            classes, add_special_tokens=False, return_tensors="pt", padding="longest"
+        )
         # (num_videos, channel, time, height, width)
         pixel_values = process(
             self.processor,
@@ -126,7 +121,18 @@ class Preprocessor:
             ),
         ).pixel_values
 
-        return {"pixel_values": pixel_values, **inputs}
+        return {
+            # (1, num_videos, channel, time, height, width)
+            "pixel_values": pixel_values.unsqueeze(0),
+            # (1, prompt_seq_len)
+            "prompt_input_ids": prompt_inputs["input_ids"].unsqueeze(0),
+            # (1, prompt_seq_len, num_videos)
+            "prompt_video_causal_mask": prompt_inputs["video_causal_mask"].unsqueeze(0),
+            # (num_classes, class_seq_len)
+            "class_input_ids": class_inputs["input_ids"],
+            # (num_classes, class_seq_len)
+            "class_attention_mask": class_inputs["attention_mask"],
+        }
 
 
 def eval(
@@ -196,18 +202,22 @@ def eval(
         preprocessed["pixel_values"] = preprocessed["pixel_values"].to(
             dtype=model.dtype, device=model.device
         )
-        preprocessed["video_causal_mask"] = preprocessed["video_causal_mask"].to(
+        preprocessed["prompt_input_ids"] = preprocessed["prompt_input_ids"].to(
             device=model.device
         )
-        preprocessed["input_ids"] = preprocessed["input_ids"].to(device=model.device)
-        preprocessed["attention_mask"] = preprocessed["attention_mask"].to(
+        preprocessed["prompt_video_causal_mask"] = preprocessed[
+            "prompt_video_causal_mask"
+        ].to(device=model.device)
+        preprocessed["class_input_ids"] = preprocessed["class_input_ids"].to(
             device=model.device
         )
-        preprocessed["labels"] = preprocessed["labels"].to(device=model.device)
-        # (num_structured_verbs)
+        preprocessed["class_attention_mask"] = preprocessed["class_attention_mask"].to(
+            device=model.device
+        )
+        # (1, num_structured_verbs)
         log_likelihood = model.classify(**preprocessed)
         verb_f1(
-            log_likelihood.unsqueeze(0).to("cpu"),
+            log_likelihood.to("cpu"),
             torch.tensor([verb_id_map[datapoint["structured_verb"]]]),
         )
         pred_verb = structured_verbs[log_likelihood.argmax()]
@@ -283,9 +293,7 @@ if __name__ == "__main__":
     )
 
     preprocessor = Preprocessor(
-        processor,
-        "Question: What is the camera wearer doing? Answer:",
-        model.config.text_config.eos_token_id,
+        processor, "Question: What is the camera wearer doing? Answer:"
     )
     eval(
         eval_dataset,

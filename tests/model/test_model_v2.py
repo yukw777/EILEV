@@ -1411,10 +1411,12 @@ def test_v2_video_blip_for_cond_gen_generate(
     assert generated_ids.size() == (batch, max_length)
 
 
-@pytest.mark.parametrize("seq_len", [1, 16])
 @pytest.mark.parametrize("time", [1, 8])
+@pytest.mark.parametrize("class_seq_len", [3, 5])
+@pytest.mark.parametrize("num_classes", [4, 6])
+@pytest.mark.parametrize("prompt_seq_len", [1, 16])
 @pytest.mark.parametrize("num_videos", [1, 5])
-@pytest.mark.parametrize("num_classes", [1, 4])
+@pytest.mark.parametrize("batch", [1, 4])
 @pytest.mark.parametrize(
     "config",
     [
@@ -1446,11 +1448,12 @@ def test_v2_video_blip_for_cond_gen_generate(
     ],
 )
 def test_v2_video_blip_for_cond_gen_classify(
-    config, num_classes, num_videos, time, seq_len
+    config, batch, num_videos, prompt_seq_len, num_classes, class_seq_len, time
 ):
     model = VideoBlipForConditionalGeneration(config)
     log_likelihood = model.classify(
         torch.rand(
+            batch,
             num_videos,
             # channel is pretty much always 3
             3,
@@ -1458,9 +1461,10 @@ def test_v2_video_blip_for_cond_gen_classify(
             config.vision_config.image_size,
             config.vision_config.image_size,
         ),
-        torch.ones(num_classes, seq_len).long(),
-        torch.ones(num_classes, seq_len).long(),
-        torch.ones(num_classes, seq_len).long(),
-        torch.ones(num_classes, seq_len, num_videos).long(),
+        torch.ones(batch, prompt_seq_len).long(),
+        torch.ones(num_classes, class_seq_len).long(),
+        prompt_attention_mask=torch.ones(batch, prompt_seq_len).long(),
+        prompt_video_causal_mask=torch.ones(batch, prompt_seq_len, num_videos).long(),
+        class_attention_mask=torch.ones(num_classes, class_seq_len).long(),
     )
-    assert log_likelihood.size() == (num_classes,)
+    assert log_likelihood.size() == (batch, num_classes)
