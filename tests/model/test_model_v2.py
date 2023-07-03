@@ -571,6 +571,394 @@ from video_blip.model.v2 import (
                 ]
             ).unsqueeze(1),
         ),
+        (
+            # left-sided text token padding
+            torch.tensor(
+                [[1] * 6 + [0] * 2 + [1] * 3, [1] * 11, [1] * 6 + [0] * 3 + [1] * 2]
+            ),
+            torch.tensor(
+                [
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            1,
+            10,
+            torch.float,
+            torch.tensor(
+                [
+                    [
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 3
+                    ],
+                    [[torch.finfo(torch.float).min] * 4 + [0.0] * 7],
+                    [[0.0] * 2 + [torch.finfo(torch.float).min] * 7 + [0.0] * 2],
+                ]
+            ).unsqueeze(1),
+        ),
+        (
+            # left-sided text token padding
+            torch.tensor(
+                [[1] * 6 + [0] * 2 + [1] * 3, [1] * 11, [1] * 6 + [0] * 3 + [1] * 2]
+            ),
+            torch.tensor(
+                [
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            1,
+            10,
+            torch.float16,
+            torch.tensor(
+                [
+                    [
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 3
+                    ],
+                    [[torch.finfo(torch.float16).min] * 4 + [0.0] * 7],
+                    [[0.0] * 2 + [torch.finfo(torch.float16).min] * 7 + [0.0] * 2],
+                ]
+            ).unsqueeze(1),
+        ),
+        (
+            torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            torch.tensor(
+                [
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            3,
+            8,
+            torch.float,
+            torch.tensor(
+                [
+                    [
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                        [torch.finfo(torch.float).min] * 4
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                        [torch.finfo(torch.float).min] * 4
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                    ],
+                    [
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [0.0] * 4
+                        + [torch.finfo(torch.float).min] * 1,
+                        [torch.finfo(torch.float).min] * 4 + [0.0] * 2 + [0.0] * 5,
+                    ],
+                    [
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                        [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 3,
+                    ],
+                ]
+            ).unsqueeze(1),
+        ),
+        (
+            torch.tensor([[1] * 9 + [0] * 2, [1] * 11, [1] * 8 + [0] * 3]),
+            torch.tensor(
+                [
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            3,
+            8,
+            torch.float16,
+            torch.tensor(
+                [
+                    [
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                    ],
+                    [
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [0.0] * 4
+                        + [torch.finfo(torch.float16).min] * 1,
+                        [torch.finfo(torch.float16).min] * 4 + [0.0] * 2 + [0.0] * 5,
+                    ],
+                    [
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
+                        [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 3,
+                    ],
+                ]
+            ).unsqueeze(1),
+        ),
+        (
+            # left-sided text token padding
+            torch.tensor(
+                [[1] * 6 + [0] * 2 + [1] * 3, [1] * 11, [1] * 6 + [0] * 3 + [1] * 2]
+            ),
+            torch.tensor(
+                [
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            3,
+            8,
+            torch.float,
+            torch.tensor(
+                [
+                    [
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 6
+                        + [0.0]
+                        + [torch.finfo(torch.float).min] * 2,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 1,
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 3,
+                    ],
+                    [
+                        [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float).min] * 2,
+                        [torch.finfo(torch.float).min] * 4
+                        + [0.0] * 2
+                        + [0.0] * 4
+                        + [torch.finfo(torch.float).min] * 1,
+                        [torch.finfo(torch.float).min] * 4 + [0.0] * 2 + [0.0] * 5,
+                    ],
+                    [
+                        [torch.finfo(torch.float).min] * 11,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float).min] * 7
+                        + [0.0]
+                        + [torch.finfo(torch.float).min],
+                        [0.0] * 2 + [torch.finfo(torch.float).min] * 7 + [0.0] * 2,
+                    ],
+                ]
+            ).unsqueeze(1),
+        ),
+        (
+            # left-sided text token padding
+            torch.tensor(
+                [[1] * 6 + [0] * 2 + [1] * 3, [1] * 11, [1] * 6 + [0] * 3 + [1] * 2]
+            ),
+            torch.tensor(
+                [
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                    ],
+                    [
+                        [1, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 1, 1, 0, 0],
+                        [0, 0, 0, 0, 1, 1],
+                        [0, 0, 0, 0, 1, 1],
+                    ],
+                    [
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0],
+                    ],
+                ]
+            ),
+            3,
+            3,
+            8,
+            torch.float16,
+            torch.tensor(
+                [
+                    [
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 6
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 6
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 1,
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 3,
+                    ],
+                    [
+                        [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 2
+                        + [0.0] * 3
+                        + [torch.finfo(torch.float16).min] * 2,
+                        [torch.finfo(torch.float16).min] * 4
+                        + [0.0] * 2
+                        + [0.0] * 4
+                        + [torch.finfo(torch.float16).min] * 1,
+                        [torch.finfo(torch.float16).min] * 4 + [0.0] * 2 + [0.0] * 5,
+                    ],
+                    [
+                        [torch.finfo(torch.float16).min] * 11,
+                        [0.0] * 2
+                        + [torch.finfo(torch.float16).min] * 7
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min],
+                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 7 + [0.0] * 2,
+                    ],
+                ]
+            ).unsqueeze(1),
+        ),
     ],
 )
 def test_prepare_decoder_attention_mask(
@@ -604,7 +992,7 @@ def test_prepare_decoder_attention_mask(
 
 @pytest.mark.parametrize("output_hidden_states", [True, False])
 @pytest.mark.parametrize("output_attentions", [True, False])
-@pytest.mark.parametrize("video_seq_len", [1, 8])
+@pytest.mark.parametrize("num_videos", [1, 2])
 @pytest.mark.parametrize("text_seq_len", [1, 5])
 @pytest.mark.parametrize("batch", [1, 4])
 @pytest.mark.parametrize(
@@ -630,10 +1018,11 @@ def test_v2_video_opt_decoder_forward(
     config: OPTConfig,
     batch: int,
     text_seq_len: int,
-    video_seq_len: int,
+    num_videos: int,
     output_attentions: bool,
     output_hidden_states: bool,
 ) -> None:
+    video_seq_len = num_videos * config.qformer_num_query_tokens
     model = VideoOPTDecoder(config)
     outputs = model(
         input_ids=torch.ones(batch, video_seq_len + text_seq_len).long(),
@@ -678,7 +1067,7 @@ def test_v2_video_opt_decoder_forward(
 
 @pytest.mark.parametrize("output_hidden_states", [True, False])
 @pytest.mark.parametrize("output_attentions", [True, False])
-@pytest.mark.parametrize("video_seq_len", [1, 8])
+@pytest.mark.parametrize("num_videos", [1, 2])
 @pytest.mark.parametrize("text_seq_len", [1, 5])
 @pytest.mark.parametrize("batch", [1, 4])
 @pytest.mark.parametrize(
@@ -704,10 +1093,11 @@ def test_v2_video_opt_for_causal_lm_forward(
     config: OPTConfig,
     batch: int,
     text_seq_len: int,
-    video_seq_len: int,
+    num_videos: int,
     output_attentions: bool,
     output_hidden_states: bool,
 ) -> None:
+    video_seq_len = num_videos * config.qformer_num_query_tokens
     model = VideoOPTForCausalLM(config)
     outputs = model(
         input_ids=torch.ones(batch, video_seq_len + text_seq_len).long(),
