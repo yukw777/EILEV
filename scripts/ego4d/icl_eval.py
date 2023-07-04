@@ -111,7 +111,12 @@ class Preprocessor:
         # input_ids: (num_classes, class_seq_len)
         # attention_mask: (num_classes, class_seq_len)
         class_inputs = self.processor.tokenizer(
-            classes, add_special_tokens=False, return_tensors="pt", padding="longest"
+            # prepend a space before each class name as the tokenizer
+            # treats a word preceded by a space as a separate token.
+            [" " + c for c in classes],
+            add_special_tokens=False,
+            return_tensors="pt",
+            padding="longest",
         )
         # (num_videos, channel, time, height, width)
         pixel_values = process(
