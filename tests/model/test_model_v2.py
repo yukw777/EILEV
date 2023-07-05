@@ -1413,6 +1413,7 @@ def test_v2_video_blip_for_cond_gen_generate(
 
 @pytest.mark.parametrize("time", [1, 8])
 @pytest.mark.parametrize("class_seq_len", [3, 5])
+@pytest.mark.parametrize("class_batch_size", [None, 3])
 @pytest.mark.parametrize("num_classes", [4, 6])
 @pytest.mark.parametrize("prompt_seq_len", [1, 16])
 @pytest.mark.parametrize("num_videos", [1, 5])
@@ -1448,11 +1449,18 @@ def test_v2_video_blip_for_cond_gen_generate(
     ],
 )
 def test_v2_video_blip_for_cond_gen_classify(
-    config, batch, num_videos, prompt_seq_len, num_classes, class_seq_len, time
+    config,
+    batch,
+    num_videos,
+    prompt_seq_len,
+    num_classes,
+    class_batch_size,
+    class_seq_len,
+    time,
 ):
-    model = VideoBlipForConditionalGeneration(config)
-    log_likelihood = model.classify(
-        torch.rand(
+    model = VideoBlipForConditionalGeneration(config).eval()
+    classify_kwargs = {
+        "pixel_values": torch.rand(
             batch,
             num_videos,
             # channel is pretty much always 3
@@ -1461,10 +1469,17 @@ def test_v2_video_blip_for_cond_gen_classify(
             config.vision_config.image_size,
             config.vision_config.image_size,
         ),
-        torch.ones(batch, prompt_seq_len).long(),
-        torch.ones(num_classes, class_seq_len).long(),
-        prompt_attention_mask=torch.ones(batch, prompt_seq_len).long(),
-        prompt_video_causal_mask=torch.ones(batch, prompt_seq_len, num_videos).long(),
-        class_attention_mask=torch.ones(num_classes, class_seq_len).long(),
-    )
+        "prompt_input_ids": torch.ones(batch, prompt_seq_len).long(),
+        "class_input_ids": torch.ones(num_classes, class_seq_len).long(),
+        "prompt_attention_mask": torch.ones(batch, prompt_seq_len).long(),
+        "prompt_video_causal_mask": torch.ones(
+            batch, prompt_seq_len, num_videos
+        ).long(),
+        "class_attention_mask": torch.ones(num_classes, class_seq_len).long(),
+    }
+    log_likelihood = model.classify(**classify_kwargs)
     assert log_likelihood.size() == (batch, num_classes)
+    class_batch_log_likelihood = model.classify(
+        **classify_kwargs, class_batch_size=class_batch_size
+    )
+    assert log_likelihood.equal(class_batch_log_likelihood)

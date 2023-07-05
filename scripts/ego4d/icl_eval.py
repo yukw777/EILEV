@@ -152,6 +152,7 @@ def eval(
     structured_nouns: list[str],
     log_verb_preds: bool,
     print_verb_preds: bool,
+    class_batch_size: int,
 ) -> None:
     verb_id_map = {verb: i for i, verb in enumerate(structured_verbs)}
     verb_f1 = MulticlassF1Score(len(structured_verbs))
@@ -220,7 +221,9 @@ def eval(
             device=model.device
         )
         # (1, num_structured_verbs)
-        log_likelihood = model.classify(**preprocessed)
+        log_likelihood = model.classify(
+            **preprocessed, class_batch_size=class_batch_size
+        )
         verb_f1(
             log_likelihood.to("cpu"),
             torch.tensor([verb_id_map[datapoint["structured_verb"]]]),
@@ -262,6 +265,7 @@ if __name__ == "__main__":
     parser.add_argument("--print_verb_preds", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=0, type=int)
     parser.add_argument("--random-seed", type=int, default=42)
+    parser.add_argument("--class_batch_size", type=int, default=None)
     args = parser.parse_args()
 
     torch.manual_seed(args.random_seed)
@@ -312,4 +316,5 @@ if __name__ == "__main__":
         fho_lta_taxonomy["nouns"],
         args.log_verb_preds,
         args.print_verb_preds,
+        args.class_batch_size,
     )

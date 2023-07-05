@@ -793,6 +793,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         prompt_attention_mask: torch.Tensor | None = None,
         prompt_video_causal_mask: torch.Tensor | None = None,
         class_attention_mask: torch.Tensor | None = None,
+        class_batch_size: int | None = None,
     ) -> torch.Tensor:
         """
 
@@ -805,6 +806,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         :param prompt_video_causal_mask: tensor of shape
             (batch, prompt_seq_len, num_videos)
         :param class_attention_mask: tensor of shape (num_classes, class_seq_len)
+        :param class_batch_size: batch size for processing classes
         :return: log likelihoods for the classes
         """
 
@@ -878,6 +880,36 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         )
 
         # step 4: calculate the mean log likelihood using the cached results from step 3
+        num_classes = class_input_ids.size(0)
+        if class_batch_size is None:
+            class_batch_size = num_classes
+        mean_class_log_likelihoods: list[torch.Tensor] = []
+        for i in range(0, num_classes, class_batch_size):
+            # (batch, class_batch_size)
+            mean_log_likelihood = self._calc_class_log_likelihood(
+                batch,
+                class_input_ids[i : i + class_batch_size],
+                prompt_outputs.logits,
+                prompt_outputs.past_key_values,
+                prompt_attention_mask,
+                prompt_video_causal_mask,
+                class_attention_mask=None
+                if class_attention_mask is None
+                else class_attention_mask[i : i + class_batch_size],
+            )
+            mean_class_log_likelihoods.append(mean_log_likelihood)
+        return torch.cat(mean_class_log_likelihoods, dim=1)
+
+    def _calc_class_log_likelihood(
+        self,
+        batch: int,
+        class_input_ids: torch.Tensor,
+        prompt_logits: torch.Tensor,
+        prompt_past_key_values: tuple[tuple[torch.Tensor]],
+        prompt_attention_mask: torch.Tensor,
+        prompt_video_causal_mask: torch.Tensor,
+        class_attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         num_classes, class_seq_len = class_input_ids.size()
         # (batch * num_classes, class_seq_len)
         batch_class_input_ids = (
@@ -904,14 +936,12 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         #  num_videos * num_query_tokens + prompt_seq_len, hidden_per_head)
         batch_past_key_values = tuple(
             tuple(kv.repeat_interleave(num_classes, dim=0) for kv in layer_kv)
-            for layer_kv in prompt_outputs.past_key_values
+            for layer_kv in prompt_past_key_values
         )
         # repeat the video causal mask for the last text token class_seq_len times
         # (batch, class_seq_len, num_videos * num_query_tokens)
-        last_video_causal_mask = (
-            prompt_video_causal_mask[:, -1, :]
-            .unsqueeze(1)
-            .expand(-1, class_seq_len, -1)
+        last_video_causal_mask = prompt_video_causal_mask[:, -1:, :].expand(
+            -1, class_seq_len, -1
         )
         # (batch, prompt_seq_len + class_seq_len, num_videos * num_query_tokens)
         video_causal_mask = torch.cat(
@@ -934,7 +964,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         # (batch * num_classes, class_seq_len, hidden)
         shift_logits = torch.cat(
             [
-                prompt_outputs.logits[:, -1:].repeat_interleave(num_classes, dim=0),
+                prompt_logits[:, -1:].repeat_interleave(num_classes, dim=0),
                 outputs.logits[:, :-1],
             ],
             dim=1,
@@ -954,7 +984,8 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
 
         # (batch, num_classes, num_tokens - 1)
         loss = loss_fct(
-            shift_logits.view(-1, self.config.text_config.vocab_size), labels.view(-1)
+            shift_logits.view(-1, self.config.text_config.vocab_size),
+            labels.reshape(-1),
         ).view(batch, num_classes, -1)
 
         # return the mean log likelihood
