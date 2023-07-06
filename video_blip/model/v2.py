@@ -692,12 +692,12 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
     @torch.no_grad()
     def generate(
         self,
-        pixel_values: torch.FloatTensor,
-        input_ids: torch.LongTensor | None = None,
-        attention_mask: torch.LongTensor | None = None,
-        video_causal_mask: torch.LongTensor | None = None,
+        pixel_values: torch.Tensor,
+        input_ids: torch.Tensor | None = None,
+        attention_mask: torch.Tensor | None = None,
+        video_causal_mask: torch.Tensor | None = None,
         **generate_kwargs,
-    ) -> torch.LongTensor:
+    ) -> torch.Tensor:
         """Mostly copied from Blip2ForConditionalGeneration.generate()
 
         Look at the official doc for Blip2ForConditionalGeneration for more details on
