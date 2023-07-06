@@ -15,10 +15,10 @@ from video_blip.data.utils import (
 @pytest.mark.parametrize(
     "narration_text,cleaned",
     [
-        ("#C C drops a plate", "The camera wearer drops a plate"),
-        ("#C C drops a plate ", "The camera wearer drops a plate"),
-        ("#c C drops a plate", "The camera wearer drops a plate"),
-        ("#C c drops a plate", "The camera wearer drops a plate"),
+        ("#C C drops a plate", "The camera wearer drops a plate."),
+        ("#C C drops a plate ", "The camera wearer drops a plate."),
+        ("#c C drops a plate", "The camera wearer drops a plate."),
+        ("#C c drops a plate", "The camera wearer drops a plate."),
         (
             "#C  C adjusts the screw in the machine with the screwdriver. #Unsure."
             "<|eos|>",
@@ -26,7 +26,7 @@ from video_blip.data.utils import (
         ),
         (
             "#C C drops #unsure on the countertop<|eos|>",
-            "The camera wearer drops something on the countertop",
+            "The camera wearer drops something on the countertop.",
         ),
         (
             "#C C touches his face with his right hand. #Unsure.\n<|eos|>",
@@ -42,7 +42,7 @@ from video_blip.data.utils import (
         ),
         (
             "#C C pours cooking pots #Unsure on the        <|eos|>",
-            "The camera wearer pours cooking pots something on the",
+            "The camera wearer pours cooking pots something on the.",
         ),
     ],
 )

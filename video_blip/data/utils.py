@@ -1,4 +1,5 @@
 import re
+import string
 from collections.abc import Iterable
 from typing import TypeVar
 
@@ -65,6 +66,13 @@ def clean_narration_text(narration_text: str) -> str:
 
     # replace #unsure in the middle with "something"
     cleaned = re.sub(UNSURE_MIDDLE_REGEX, "something", cleaned)
+
+    if len(cleaned) == 0:
+        return cleaned
+
+    # if cleaned doesn't end with a punctuation, append a period
+    if not cleaned[-1] in string.punctuation:
+        cleaned += "."
 
     return cleaned
 
