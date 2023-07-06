@@ -1,0 +1,793 @@
+prompt,structured_noun
+an apple,apple
+an apron,apron
+an arm,arm
+an artwork,"artwork_(art,_draw,_drawing,_painting,_sketch)"
+an art,"artwork_(art,_draw,_drawing,_painting,_sketch)"
+a drawing,"artwork_(art,_draw,_drawing,_painting,_sketch)"
+a painting,"artwork_(art,_draw,_drawing,_painting,_sketch)"
+a sketch,"artwork_(art,_draw,_drawing,_painting,_sketch)"
+an asparagus,asparagus
+an avocado,avocado
+an awl,awl
+an axe,axe
+a baby,baby
+bacon,bacon
+a bag,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+grocery,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+nylon,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+polythene,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+a pouch,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+a sachet,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+a sack,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+a suitcase,"bag_(bag,_grocery,_nylon,_polythene,_pouch,_sachet,_sack,_suitcase)"
+baking soda,baking_soda
+a ball,"ball_(ball,_baseball,_basketball)"
+a baseball,"ball_(ball,_baseball,_basketball)"
+a basketball,"ball_(ball,_baseball,_basketball)"
+a ball bearing,ball_bearing
+a balloon,balloon
+a banana,"banana_(banana,_plantain)"
+a plantain,"banana_(banana,_plantain)"
+a bar,bar
+a baseboard,baseboard
+a basket,basket
+a baseball bat,bat_(sports)
+a bat,bat_(tool)
+a bathtub,bathtub
+a batter,"batter_(batter,_mixture)"
+a mixture,"batter_(batter,_mixture)"
+a battery,battery
+a bead,bead
+a beaker,beaker
+a bean,bean
+a bed,bed
+a belt,belt
+a bench,bench
+a berry,berry
+a beverage,"beverage_(drink,_juice,_beer,_beverage,_champagne)"
+a drink,"beverage_(drink,_juice,_beer,_beverage,_champagne)"
+juice,"beverage_(drink,_juice,_beer,_beverage,_champagne)"
+beer,"beverage_(drink,_juice,_beer,_beverage,_champagne)"
+champagne,"beverage_(drink,_juice,_beer,_beverage,_champagne)"
+a bicycle,"bicycle_(bicycle,_bike)"
+a bike,"bicycle_(bicycle,_bike)"
+a blanket,"blanket_(bedsheet,_blanket,_duvet)"
+a bedsheet,"blanket_(bedsheet,_blanket,_duvet)"
+a duvet,"blanket_(bedsheet,_blanket,_duvet)"
+a blender,blender
+a block,block_(material)
+a blower,blower
+a bolt extractor,bolt_extractor
+a book,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a booklet,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a magazine,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a manual,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a notebook,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a novel,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a page,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a textbook,"book_(book,_booklet,_magazine,_manual,_notebook,_novel,_page,_textbook)"
+a bookcase,bookcase
+a bottle,"bottle_(bottle,_flask)"
+a flask,"bottle_(bottle,_flask)"
+a bowl,bowl
+a bracelet,"bracelet_(bangle,_bracelet)"
+a bangle,"bracelet_(bangle,_bracelet)"
+a brake,"brake_(brake,_break)"
+a break,"brake_(brake,_break)"
+a brake pad,brake_pad
+a branch,branch
+bread,"bread_(bread,_bun,_chapati,_flatbread,_loaf,_roti,_tortilla)"
+bun,"bread_(bread,_bun,_chapati,_flatbread,_loaf,_roti,_tortilla)"
+chapati,"bread_(bread,_bun,_chapati,_flatbread,_loaf,_roti,_tortilla)"
+flatbread,"bread_(bread,_bun,_chapati,_flatbread,_loaf,_roti,_tortilla)"
+a loaf,"bread_(bread,_bun,_chapati,_flatbread,_loaf,_roti,_tortilla)"
+roti,"bread_(bread,_bun,_chapati,_flatbread,_loaf,_roti,_tortilla)"
+tortilla,"bread_(bread,_bun,_chapati,_flatbread,_loaf,_roti,_tortilla)"
+a brick,brick
+a broccoli,broccoli
+a broom,"broom_(broom,_broomstick)"
+a broomstick,"broom_(broom,_broomstick)"
+a brush,brush
+bubble gum,bubble_gum
+a bucket,bucket
+a buckle,buckle
+a burger,burger
+butter,butter
+a butterfly,butterfly
+a button,button
+a cabbage,cabbage
+a cabinet,"cabinet_(cabinet,_compartment,_cupboard)"
+a compartment,"cabinet_(cabinet,_compartment,_cupboard)"
+a cupboard,"cabinet_(cabinet,_compartment,_cupboard)"
+a calculator,calculator
+a caliper,caliper
+a camera,camera
+a can opener,can_opener
+a candle,candle
+a canvas,canvas
+a car,"car_(car,_vehicle)"
+a vehicle,"car_(car,_vehicle)"
+a card,card
+cardboard,"cardboard_(cardboard,_paperboard)"
+paperboard,"cardboard_(cardboard,_paperboard)"
+carpet,carpet
+a carrot,carrot
+a cart,"cart_(cart,_trolley)"
+a trolley,"cart_(cart,_trolley)"
+a cat,cat
+a ceiling,ceiling
+a celery,celery
+a cello,cello
+cement,"cement_(cement,_concrete,_mortar)"
+concrete,"cement_(cement,_concrete,_mortar)"
+a mortar,"cement_(cement,_concrete,_mortar)"
+cereal,cereal
+chaff,chaff
+a chain,chain
+a chair,chair
+chalk,chalk
+cheese,cheese
+a chicken,chicken
+a potato chip,chip_(food)
+a woodchip,"chip_(wood'_metal),"
+a metal chip,"chip_(wood,_metal)"
+a chisel,chisel
+chocolate,chocolate
+a chopping board,chopping_board
+chopsticks,chopstick
+a cigarette,"cigarette_(cigarette,_vape)"
+a vape,"cigarette_(cigarette,_vape)"
+a circuit,circuit
+a clamp,clamp
+clay,clay
+a clip,clip
+a clock,clock
+a cloth,"cloth_(cloth,_fabric,_garment,_kanga,_rag)"
+a fabric,"cloth_(cloth,_fabric,_garment,_kanga,_rag)"
+a garment,"cloth_(cloth,_fabric,_garment,_kanga,_rag)"
+a kanga,"cloth_(cloth,_fabric,_garment,_kanga,_rag)"
+a rag,"cloth_(cloth,_fabric,_garment,_kanga,_rag)"
+a coaster,coaster
+a coconut,coconut
+coffee,coffee
+a coffee machine,coffee_machine
+a colander,colander
+a comb,comb
+a computer,"computer_(computer,_ipad,_laptop,_motherboard,_screen)"
+an ipad,"computer_(computer,_ipad,_laptop,_motherboard,_screen)"
+a laptop,"computer_(computer,_ipad,_laptop,_motherboard,_screen)"
+a motherboard,"computer_(computer,_ipad,_laptop,_motherboard,_screen)"
+a screen,"computer_(computer,_ipad,_laptop,_motherboard,_screen)"
+a container,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a box,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a can,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a carton,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a case,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a casing,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a crate,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a holder,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a jar,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a jerrycan,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a keg,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a pack,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a package,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a packaging,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a packet,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a storage,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a tank,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a tin,"container_(box,_can,_carton,_case,_casing,_container,_crate,_holder,_jar,_jerrycan,_keg,_pack,_package,_packaging,_packet,_storage,_tank,_tin)"
+a cooker,cooker
+a cookie,cookie
+a cork,cork
+corn,corn
+a corner,corner
+a countertop,"countertop_(counter,_countertop)"
+a counter,"countertop_(counter,_countertop)"
+a crab,crab
+a cracker,"cracker_(biscuit,_cracker)"
+a biscuit,"cracker_(biscuit,_cracker)"
+a crayon,crayon
+cream,cream
+crochet,crochet
+a crowbar,crowbar
+a cucumber,cucumber
+a cup,"cup_(cup,_mug,_tumbler)"
+a mug,"cup_(cup,_mug,_tumbler)"
+a tumbler,"cup_(cup,_mug,_tumbler)"
+a curtain,curtain
+a cushion,cushion
+a cutter,cutter_(tool)
+a decoration,"decoration_(decoration,_ornament)"
+an ornament,"decoration_(decoration,_ornament)"
+a derailleur,derailleur
+detergent,detergent
+dice,"dice_(dice,_die)"
+a die,"dice_(dice,_die)"
+a dishwasher,dishwasher
+a dog,dog
+a door,door
+a doorbell,doorbell
+a dough,dough
+a dough mixer,dough_mixer
+a doughnut,doughnut
+a drawer,drawer
+a dress,dress
+a drill,"drill_(drill,_driller)"
+a driller,"drill_(drill,_driller)"
+a drill bit,drill_bit
+a drum,drum
+a dumbbell,dumbbell
+dust,"dust_(dust,_sawdust)"
+saw dust,"dust_(dust,_sawdust)"
+a duster,duster
+a dustpan,dustpan
+an egg,egg
+an eggplant,eggplant
+an engine,"engine_(assembly,_carburetor,_engine,_motor)"
+an assembly,"engine_(assembly,_carburetor,_engine,_motor)"
+a carburetor,"engine_(assembly,_carburetor,_engine,_motor)"
+a motor,"engine_(assembly,_carburetor,_engine,_motor)"
+an envelope,"envelope_(envelop,_envelope)"
+an envelop,"envelope_(envelop,_envelope)"
+an eraser,"eraser_(eraser,_rubber)"
+a rubber,"eraser_(eraser,_rubber)"
+a facemask,facemask
+a fan,fan
+a faucet,"faucet_(faucet,_tap)"
+a tap,"faucet_(faucet,_tap)"
+a fence,fence
+a file,file_(tool)
+a filer,filler
+a filter,filter
+fish,fish
+a fishing rod,fishing_rod
+a flash drive,flash_drive
+floor,"floor_(floor,_ground)"
+ground,"floor_(floor,_ground)"
+flour,flour
+a flower,flower
+foam,foam
+foil,foil
+food,food
+a foot,"foot_(foot,_toe)"
+a toe,"foot_(foot,_toe)"
+a fork,fork
+a fridge,"fridge_(fridge,_refrigerator)"
+a refrigerator,"fridge_(fridge,_refrigerator)"
+fries,fries
+fuel,fuel
+a funnel,funnel
+a game controller,game_controller
+a garbage can,"garbage_can_(bin,_dustbin)"
+a bin,"garbage_can_(bin,_dustbin)"
+a dustbin,"garbage_can_(bin,_dustbin)"
+garlic,garlic
+a gasket,gasket
+a gate,gate
+a gauge,gauge
+gauze,gauze
+a gear,gear
+a generator,generator
+ginger,ginger
+a glass,glass
+glasses,"glasses_(goggle,_shade,_spectacle,_sunglass)"
+shades,"glasses_(goggle,_shade,_spectacle,_sunglass)"
+spectacles,"glasses_(goggle,_shade,_spectacle,_sunglass)"
+sunglasses,"glasses_(goggle,_shade,_spectacle,_sunglass)"
+a glove,glove
+glue,"glue_(adhesive,_glue,_gum,_sealant)"
+adhesive,"glue_(adhesive,_glue,_gum,_sealant)"
+gum,"glue_(adhesive,_glue,_gum,_sealant)"
+sealant,"glue_(adhesive,_glue,_gum,_sealant)"
+a glue gun,glue_gun
+a golf club,golf_club
+a gourd,gourd
+a grain,grain
+a grape,grape
+a grapefruit,grapefruit
+grass,grass
+a grater,grater
+a grill,grill
+a grinder,grinder
+a guava,guava
+a guitar,guitar
+hair,hair
+a hammer,"hammer_(hammer,_mallet)"
+a mallet,"hammer_(hammer,_mallet)"
+a hand,"hand_(finger,_hand,_palm,_thumb)"
+a finger,"hand_(finger,_hand,_palm,_thumb)"
+a palm,"hand_(finger,_hand,_palm,_thumb)"
+a thumb,"hand_(finger,_hand,_palm,_thumb)"
+a handle,handle
+a hanger,hanger
+a hat,hat
+hay,hay
+a haystack,haystack
+a head,head
+headphones,"headphones_(earphone,_headphone)"
+earphones,"headphones_(earphone,_headphone)"
+a heater,heater
+a helmet,helmet
+a hinge,hinge
+a hole,hole
+a horse,horse
+a hose,hose
+a house,house
+ice,ice
+ice cream,ice_cream
+ink,ink
+an iron,iron
+a jack,"jack_(tool)_(jack,_lift)"
+a lift,"jack_(tool)_(jack,_lift)"
+a jacket,"jacket_(coat,_jacket)"
+a coat,"jacket_(coat,_jacket)"
+a jug,jug
+kale,kale
+ketchup,ketchup
+a kettle,kettle
+a key,key
+a keyboard,keyboard
+a knife,"knife_(knife,_machete)"
+a machete,"knife_(knife,_machete)"
+a label,"label_(label,_tag)"
+a tag,"label_(label,_tag)"
+a ladder,ladder
+a leaf,"leaf_(leaf,_leave)"
+leaves,"leaf_(leaf,_leave)"
+a leash,leash
+a leg,"leg_(knee,_leg,_thigh)"
+a knee,"leg_(knee,_leg,_thigh)"
+a thigh,"leg_(knee,_leg,_thigh)"
+a lemon,lemon
+a lever,lever
+a lid,"lid_(cap,_cover,_lid)"
+a cap,"lid_(cap,_cover,_lid)"
+a lid,"lid_(cap,_cover,_lid)"
+a light,"light_(bulb,_flashlight,_lamp,_light)"
+a bulb,"light_(bulb,_flashlight,_lamp,_light)"
+a flashlight,"light_(bulb,_flashlight,_lamp,_light)"
+a lamp,"light_(bulb,_flashlight,_lamp,_light)"
+a lighter,lighter
+a lime,lime
+a lock,lock
+a lubricant,"lubricant_(grease,_lubricant)"
+grease,"lubricant_(grease,_lubricant)"
+a magnet,"magnet_(magnet,_sphere)"
+a sphere,"magnet_(magnet,_sphere)"
+a mango,mango
+manure,"manure_(dung,_manure)"
+dung,"manure_(dung,_manure)"
+a mask,mask
+a mat,"mat_(mat,_rug)"
+a rug,"mat_(mat,_rug)"
+a matchstick,matchstick
+meat,"meat_(beef,_ham,_meat)"
+beef,"meat_(beef,_ham,_meat)"
+ham,"meat_(beef,_ham,_meat)"
+medicine,medicine
+metal,"metal_(lead,_metal,_steel)"
+lead,"metal_(lead,_metal,_steel)"
+steel,"metal_(lead,_metal,_steel)"
+a microscope,microscope
+a microwave,microwave
+milk,milk
+a mirror,mirror
+a mixer,mixer
+a mold,"mold_(mold,_molder,_mould)"
+a molder,"mold_(mold,_molder,_mould)"
+a mould,"mold_(mold,_molder,_mould)"
+money,"money_(cash,_coin,_money)"
+cash,"money_(cash,_coin,_money)"
+a coin,"money_(cash,_coin,_money)"
+money,"money_(cash,_coin,_money)"
+a mop,mop
+a motorcycle,"motorcycle_(motorbike,_motorcycle)"
+a motorbike,"motorcycle_(motorbike,_motorcycle)"
+a mouse,mouse_(computer)
+a mouth,mouth
+a mower,"mower_(lawnmower,_mower)"
+a lawnmower,"mower_(lawnmower,_mower)"
+a multimeter,multimeter
+a mushroom,mushroom
+a nail cutter,nail_cutter
+a nail gun,nail_gun
+nail polish,nail_polish
+a napkin,"napkin_(handkerchief,_napkin,_serviette,_tissue,_wipe)"
+a handkerchief,"napkin_(handkerchief,_napkin,_serviette,_tissue,_wipe)"
+a serviette,"napkin_(handkerchief,_napkin,_serviette,_tissue,_wipe)"
+a tissue,"napkin_(handkerchief,_napkin,_serviette,_tissue,_wipe)"
+a wipe,"napkin_(handkerchief,_napkin,_serviette,_tissue,_wipe)"
+a necklace,necklace
+a needle,"needle_(hook,_needle)"
+a hook,"needle_(hook,_needle)"
+a net,net
+a nozzle,nozzle
+a culinary nut,nut_(food)
+a nut,nut_(tool)
+oil,"oil_(fat,_oil)"
+fat,"oil_(fat,_oil)"
+okra,okra
+an onion,onion
+an oven,oven
+a paddle,paddle
+paint,paint
+a paint roller,paint_roller
+a paintbrush,paintbrush
+a palette,palette
+a pan,"pan_(frypan,_pan,_saucepan)"
+a frypan,"pan_(frypan,_pan,_saucepan)"
+a saucepan,"pan_(frypan,_pan,_saucepan)"
+a pancake,pancake
+a panel,panel
+pants,"pants_(jean,_pant,_short,_trouser)"
+jeans,"pants_(jean,_pant,_short,_trouser)"
+shorts,"pants_(jean,_pant,_short,_trouser)"
+trousers,"pants_(jean,_pant,_short,_trouser)"
+a papaya,papaya
+a paper,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+a chart,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+a craft,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+a newspaper,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+a note,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+a papercraft,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+a poster,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+a receipt,"paper_(chart,_craft,_newspaper,_note,_paper,_papercraft,_poster,_receipt)"
+past,"pasta_(noodle,_pasta,_spaghetti)"
+noodles,"pasta_(noodle,_pasta,_spaghetti)"
+spaghetti,"pasta_(noodle,_pasta,_spaghetti)"
+a paste,paste
+a pastry,pastry
+a pea,pea
+a peanut,peanut
+a pear,pear
+a pedal,pedal
+a peel,peel
+a peeler,peeler
+a peg,peg
+a pen,"pen_(marker,_pen)"
+a marker,"pen_(marker,_pen)"
+a pencil,pencil
+a pepper,"pepper_(vegetable)_(capsicum,_pepper)"
+a capsicum,"pepper_(vegetable)_(capsicum,_pepper)"
+a phone,"phone_(cellphone,_phone,_smartphone)"
+a cellphone,"phone_(cellphone,_phone,_smartphone)"
+a smartphone,"phone_(cellphone,_phone,_smartphone)"
+a photo,photo
+a piano,piano
+a pickle,pickle
+a picture,"picture_(picture,_portrait)"
+a portrait,"picture_(picture,_portrait)"
+a pie,pie
+a pillow,pillow
+a pilot jet,pilot_jet
+a pin,pin
+a pipe,pipe
+pizza,pizza
+a planer,"planer_(plane,_planer)"
+a plane,"planer_(plane,_planer)"
+a plant,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a bud,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a frond,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a reed,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a seedling,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a shrub,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a stem,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a vine,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a weed,"plant_(bud,_frond,_plant,_reed,_seedling,_shrub,_stem,_vine,_weed)"
+a plate,"plate_(dish,_plate,_platter,_saucer)"
+a dish,"plate_(dish,_plate,_platter,_saucer)"
+a platter,"plate_(dish,_plate,_platter,_saucer)"
+a saucer,"plate_(dish,_plate,_platter,_saucer)"
+playing cards,playing_cards
+a piler,plier
+a plug,plug
+a pole,pole
+popcorn,popcorn
+a pot,pot
+a plan pot,pot_(planter)
+a potato,potato
+a pump,pump
+a pumpkin,pumpkin
+a purse,purse
+a puzzle piece,"puzzle_or_game_piece_(chess,_domino,_jenga,_jigsaw,_pawn,_puzzle)"
+a game piece,"puzzle_or_game_piece_(chess,_domino,_jenga,_jigsaw,_pawn,_puzzle)"
+a chess piece,"puzzle_or_game_piece_(chess,_domino,_jenga,_jigsaw,_pawn,_puzzle)"
+a domino piece,"puzzle_or_game_piece_(chess,_domino,_jenga,_jigsaw,_pawn,_puzzle)"
+a jenga piece,"puzzle_or_game_piece_(chess,_domino,_jenga,_jigsaw,_pawn,_puzzle)"
+a jigsaw puzzle piece,"puzzle_or_game_piece_(chess,_domino,_jenga,_jigsaw,_pawn,_puzzle)"
+a pawn,"puzzle_or_game_piece_(chess,_domino,_jenga,_jigsaw,_pawn,_puzzle)"
+a rack,rack
+a radio,radio
+a rail,"rail_(rail,_railing)"
+a railing,"rail_(rail,_railing)"
+a rake,rake
+a razor blade,razor_blade
+a remote control,"remote_control_(control,_remote)"
+a remote,"remote_control_(control,_remote)"
+a control,"remote_control_(control,_remote)"
+rice,rice
+a ring,ring
+a rod,"rod_(dipstick,_rod,_rod_metal,_shaft)"
+a dipstick,"rod_(dipstick,_rod,_rod_metal,_shaft)"
+a metal rod,"rod_(dipstick,_rod,_rod_metal,_shaft)"
+a shaft,"rod_(dipstick,_rod,_rod_metal,_shaft)"
+a rolling pin,rolling_pin
+a root,root
+a rope,rope
+a router,router
+a rubber band,rubber_band
+a ruler,"ruler_(rule,_ruler)"
+a rule,"ruler_(rule,_ruler)"
+sand,sand
+a sander,sander
+a sandpaper,sandpaper
+a sandwich,sandwich
+sauce,sauce
+sausage,sausage
+a saw,"saw_(chainsaw,_saw,_hacksaw)"
+a chainsaw,"saw_(chainsaw,_saw,_hacksaw)"
+a hacksaw,"saw_(chainsaw,_saw,_hacksaw)"
+a scarf,"scarf_(scarf,_shawl)"
+a shawl,"scarf_(scarf,_shawl)"
+scissors,scissors
+a scoop,"scoop_(scoop,_scooper)"
+a scooper,"scoop_(scoop,_scooper)"
+a scraper,"scraper_(scraper,_scrapper)"
+a scrapper,"scraper_(scraper,_scrapper)"
+a screw,"screw_(bolt,_nail,_screw)"
+a bolt,"screw_(bolt,_nail,_screw)"
+a nail,"screw_(bolt,_nail,_screw)"
+a screwdriver,screwdriver
+a sculpture,sculpture
+seasoning,"seasoning_(salt,_seasoning,_shaker,_spice,_sugar)"
+salt,"seasoning_(salt,_seasoning,_shaker,_spice,_sugar)"
+shaker,"seasoning_(salt,_seasoning,_shaker,_spice,_sugar)"
+spice,"seasoning_(salt,_seasoning,_shaker,_spice,_sugar)"
+sugar,"seasoning_(salt,_seasoning,_shaker,_spice,_sugar)"
+a seed,seed
+a set square,set_square_(tool)
+a sewing machine,sewing_machine
+a sharpener,sharpener
+shears,shears
+a sheet,sheet
+a shelf,shelf
+a shell,"shell_(egg_shell,_shell_egg)"
+an egg shell,"shell_(egg_shell,_shell_egg)"
+a shirt,"shirt_(cardigan,_shirt,_sweater,_sweatshirt,_top)"
+a cardigan,"shirt_(cardigan,_shirt,_sweater,_sweatshirt,_top)"
+a sweater,"shirt_(cardigan,_shirt,_sweater,_sweatshirt,_top)"
+a sweatshirt,"shirt_(cardigan,_shirt,_sweater,_sweatshirt,_top)"
+a top,"shirt_(cardigan,_shirt,_sweater,_sweatshirt,_top)"
+shoes,"shoe_(boot,_sandal,_shoe,_slipper)"
+boots,"shoe_(boot,_sandal,_shoe,_slipper)"
+sandals,"shoe_(boot,_sandal,_shoe,_slipper)"
+slippers,"shoe_(boot,_sandal,_shoe,_slipper)"
+a shovel,"shovel_(hoe,_shovel,_spade)"
+a hoe,"shovel_(hoe,_shovel,_spade)"
+a spade,"shovel_(hoe,_shovel,_spade)"
+a shower head,shower_head
+a sickle,sickle
+a sieve,"sieve_(sieve,_strainer)"
+a strainer,"sieve_(sieve,_strainer)"
+a sink,"sink_(basin,_sink)"
+a basin,"sink_(basin,_sink)"
+a sketch pad,sketch_pad
+a skirt,skirt
+a slab,slab
+a snorkel,snorkel
+soap,soap
+socks,sock
+a socket,socket
+a sofa,sofa
+soil,"soil_(dirt,_mud,_soil)"
+dirt,"soil_(dirt,_mud,_soil)"
+mud,"soil_(dirt,_mud,_soil)"
+a solder iron,solder_iron
+soup,soup
+a spacer,spacer
+a spatula,spatula
+a speaker,speaker
+a sphygmomanometer,sphygmomanometer
+spice,spice
+spinach,spinach
+a spirit level,spirit_level
+a sponge,"sponge_(scrubber,_sponge)"
+a scrubber,"sponge_(scrubber,_sponge)"
+a spoon,"spoon_(spoon,_spoonful)"
+a spoonful,"spoon_(spoon,_spoonful)"
+a spray,"spray_(spray,_sprayer)"
+a sprayer,"spray_(spray,_sprayer)"
+a spring,spring
+a squeezer,squeezer
+stairs,"stairs_(stair,_staircase)"
+a staircase,"stairs_(stair,_staircase)"
+a stamp,stamp
+a stapler,stapler
+a steamer,steamer
+a steering wheel,steering_wheel
+a stick,"stick_(stick,_twig)"
+a twig,"stick_(stick,_twig)"
+a sticker,sticker
+stock,stock_(food)
+a stone,"stone_(rock,_stone)"
+a rock,"stone_(rock,_stone)"
+a stool,stool
+a stove,"stove_(burner,_gas,_stove)"
+a burner,"stove_(burner,_gas,_stove)"
+a gas,"stove_(burner,_gas,_stove)"
+a stove,"stove_(burner,_gas,_stove)"
+a strap,strap
+a straw,straw
+a string,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a bobbin,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a knot,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a lace,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a ribbon,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a spool,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a strand,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a thread,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a twine,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+wool,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a yarn,"string_(bobbin,_knot,_lace,_ribbon,_spool,_strand,_string,_thread,_twine,_wool,_yarn)"
+a stroller,stroller
+a switch,"switch_(knob,_switch)"
+a knob,"switch_(knob,_switch)"
+a syringe,syringe
+a table,"table_(stand,_table)"
+a stand,"table_(stand,_table)"
+a tablet,tablet
+a taco,taco
+tape,"tape_(cellotape,_sellotape,_tape)"
+cellotape,"tape_(cellotape,_sellotape,_tape)"
+sellotape,"tape_(cellotape,_sellotape,_tape)"
+a tape measure,"tape_measure_(measure,_measurement)"
+a measure,"tape_measure_(measure,_measurement)"
+a measurement,"tape_measure_(measure,_measurement)"
+tea,tea
+a teapot,teapot
+the television,"television_(television,_tv)"
+the TV,"television_(television,_tv)"
+a tent,tent
+a test tube,test_tube
+a tie,tie
+a tile,tile
+a timer,timer
+a toaster,toaster
+a toilet,toilet
+toilet paper,toilet_paper
+a tomato,tomato
+tongs,tongs
+a toolbox,toolbox
+a toothbrush,toothbrush
+a toothpick,toothpick
+a torch,"torch_(torch,_torchlight)"
+a torchlight,"torch_(torch,_torchlight)"
+a towel,towel
+a toy,"toy_(doll,_toy)"
+a doll,"toy_(doll,_toy)"
+a tractor,tractor
+trash,"trash_(debris,_garbage,_litter,_trash,_waste)"
+debris,"trash_(debris,_garbage,_litter,_trash,_waste)"
+garbage,"trash_(debris,_garbage,_litter,_trash,_waste)"
+litter,"trash_(debris,_garbage,_litter,_trash,_waste)"
+waste,"trash_(debris,_garbage,_litter,_trash,_waste)"
+a tray,tray
+a treadmill,treadmill
+a tree,tree
+a trimmer,"trimmer_(pruner,_trimmer)"
+a pruner,"trimmer_(pruner,_trimmer)"
+a trowel,trowel
+a truck,truck
+a tweezer,tweezer
+an umbrella,umbrella
+an undergarment,"undergarment_(boxer,_bra)"
+boxers,"undergarment_(boxer,_bra)"
+a bra,"undergarment_(boxer,_bra)"
+a vacuum,vacuum
+a vacuum cleaner,vacuum_cleaner
+a valve,valve
+a vase,vase
+a video game,video_game
+a violin,violin
+a wall,wall
+a wallet,wallet
+wallpaper,wallpaper
+a washing machine,washing_machine
+a watch,watch
+water,water
+a watermelon,watermelon
+a weighing scale,weighing_scale
+a welding torch,welding_torch
+wheat,"wheat_(maize,_wheat)"
+maize,"wheat_(maize,_wheat)"
+a wheel,"wheel_(tyre,_wheel)"
+a tyre,"wheel_(tyre,_wheel)"
+a tire,"wheel_(tyre,_wheel)"
+a wheelbarrow,wheelbarrow
+a whisk,whisk
+a window,window
+a windshield,windshield
+a wiper,"wiper_(car)"
+a wire,"wire_(adapter,_cable,_charger,_connector,_cord,_wire)"
+an adapter,"wire_(adapter,_cable,_charger,_connector,_cord,_wire)"
+a cable,"wire_(adapter,_cable,_charger,_connector,_cord,_wire)"
+a charger,"wire_(adapter,_cable,_charger,_connector,_cord,_wire)"
+a connector,"wire_(adapter,_cable,_charger,_connector,_cord,_wire)"
+a cord,"wire_(adapter,_cable,_charger,_connector,_cord,_wire)"
+wood,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+fiber,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+firewood,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+a floorboard,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+a log,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+lumber,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+a plank,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+plywood,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+timber,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+a woodcraft,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+a woodwork,"wood_(fiber,_firewood,_floorboard,_log,_lumber,_plank,_plywood,_timber,_wood,_woodcraft,_woodwork)"
+a worm,worm
+a wrapper,"wrapper_(covering,_film,_seal,_wrap,_wrapper,_wrapping)"
+a covering,"wrapper_(covering,_film,_seal,_wrap,_wrapper,_wrapping)"
+film,"wrapper_(covering,_film,_seal,_wrap,_wrapper,_wrapping)"
+a seal,"wrapper_(covering,_film,_seal,_wrap,_wrapper,_wrapping)"
+a wrap,"wrapper_(covering,_film,_seal,_wrap,_wrapper,_wrapping)"
+a wrapping,"wrapper_(covering,_film,_seal,_wrap,_wrapper,_wrapping)"
+a wrench,"wrench_(spanner,_wrench)"
+a spanner,"wrench_(spanner,_wrench)"
+a yam,yam
+yeast,yeast
+yoghurt,yoghurt
+yogurt,yoghurt
+a zipper,"zipper_(zip,_zipper)"
+a zip,"zipper_(zip,_zipper)"
+a zucchini,zucchini
+an ambulance,ambulance
+a back,back
+a bamboo,bamboo
+a bandage,bandage
+a baton,baton
+a bird,bird
+a brownie,brownie
+a cake,cake
+a cash register,cash_register
+a cassava,cassava
+cocoa,cocoa
+a courgette,courgette
+a cow,cow
+a cupcake,cupcake
+a drone,drone
+an earplug,earplug
+a hotdog,hotdog
+a juicer,juicer
+a kiwi,kiwi
+a ladle,ladle
+a leek,leek
+lettuce,lettuce
+a marble,marble
+a melon,melon
+an orange,orange
+a peach,peach
+a person,"person_(herself,_himself,_lady,_man,_person,_shoulder,_they,_woman)"
+herself,"person_(herself,_himself,_lady,_man,_person,_shoulder,_they,_woman)"
+himself,"person_(herself,_himself,_lady,_man,_person,_shoulder,_they,_woman)"
+a lady,"person_(herself,_himself,_lady,_man,_person,_shoulder,_they,_woman)"
+a man,"person_(herself,_himself,_lady,_man,_person,_shoulder,_they,_woman)"
+them,"person_(herself,_himself,_lady,_man,_person,_shoulder,_they,_woman)"
+a woman,"person_(herself,_himself,_lady,_man,_person,_shoulder,_they,_woman)"
+a pipette,pipette
+a plum,plum
+a plunger,plunger
+a printer,printer
+a putty,putty
+a racket,racket
+a ratchet,ratchet
+a road,road
+a salad,salad
+a scaffold,scaffold
+a squash,squash
+a stereo,stereo
+a strawberry,strawberry
+a thermometer,thermometer
+a transistor,transistor
+vinegar,vinegar

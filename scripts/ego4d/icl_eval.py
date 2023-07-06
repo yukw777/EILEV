@@ -1,6 +1,8 @@
 import argparse
+import csv
 import json
 from collections import defaultdict
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -13,6 +15,7 @@ from transformers import Blip2Processor
 from video_blip.data.ego4d import Ego4dFHOMainFrameDataset
 from video_blip.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
+    clean_narration_text,
     generate_input_ids_and_labels_from_interleaved,
 )
 from video_blip.model.utils import process
@@ -91,8 +94,7 @@ class Preprocessor:
                 " ".join(
                     [
                         self.few_shot_prompt,
-                        example["structured_verb"],
-                        example["structured_noun"],
+                        clean_narration_text(example["narration_text"]),
                     ]
                 ),
                 "",
@@ -149,11 +151,16 @@ def eval(
     model: VideoBlipForConditionalGeneration,
     preprocessor: Preprocessor,
     structured_verbs: list[str],
+    structured_verb_prompts: dict[str, str],
     structured_nouns: list[str],
+    structured_noun_prompts: dict[str, str],
     log_verb_preds: bool,
     print_verb_preds: bool,
+    log_noun_preds: bool,
+    print_noun_preds: bool,
     class_batch_size: int,
 ) -> None:
+    verb_prompts = list(structured_verb_prompts.keys())
     verb_id_map = {verb: i for i, verb in enumerate(structured_verbs)}
     verb_f1 = MulticlassF1Score(len(structured_verbs))
     if log_verb_preds:
@@ -163,11 +170,30 @@ def eval(
                 "video_uid",
                 "clip_index",
                 "structured_verb",
+                "predicted_verb_prompt",
                 "prediction",
             ]
         )
     else:
         verb_pred_table = None
+
+    if log_noun_preds:
+        noun_pred_table = wandb.Table(
+            columns=[
+                "frame_path",
+                "video_uid",
+                "clip_index",
+                "structured_noun",
+                "predicted_noun_prompt",
+                "prediction",
+            ]
+        )
+    else:
+        noun_pred_table = None
+
+    noun_prompts = list(structured_noun_prompts.keys())
+    noun_id_map = {noun: i for i, noun in enumerate(structured_nouns)}
+    noun_f1 = MulticlassF1Score(len(structured_nouns))
     few_shot_dataloader_iter = (
         iter(
             DataLoader(
@@ -203,7 +229,10 @@ def eval(
         )
         # First, classify verbs
         preprocessed = preprocessor.preprocess(
-            structured_verbs, preprocessor.few_shot_prompt, datapoint, few_shot_examples
+            verb_prompts,
+            preprocessor.few_shot_prompt + " The camera wearer",
+            datapoint,
+            few_shot_examples,
         )
         preprocessed["pixel_values"] = preprocessed["pixel_values"].to(
             dtype=model.dtype, device=model.device
@@ -220,18 +249,20 @@ def eval(
         preprocessed["class_attention_mask"] = preprocessed["class_attention_mask"].to(
             device=model.device
         )
-        # (1, num_structured_verbs)
+        # (1, num_verb_prompts)
         log_likelihood = model.classify(
             **preprocessed, class_batch_size=class_batch_size
         )
+        pred_verb_prompt = verb_prompts[log_likelihood.argmax(dim=-1)]
+        pred_structured_verb = structured_verb_prompts[pred_verb_prompt]
         verb_f1(
-            log_likelihood.to("cpu"),
+            torch.tensor([verb_id_map[pred_structured_verb]]),
             torch.tensor([verb_id_map[datapoint["structured_verb"]]]),
         )
-        pred_verb = structured_verbs[log_likelihood.argmax()]
         if print_verb_preds:
             print(
-                f'Predicted: {pred_verb}, Ground Truth: {datapoint["structured_verb"]}'
+                f"Predicted Verb: {pred_structured_verb}, "
+                f'Ground Truth: {datapoint["structured_verb"]}'
             )
         if verb_pred_table is not None:
             verb_pred_table.add_data(
@@ -239,12 +270,66 @@ def eval(
                 datapoint["video_uid"],
                 datapoint["clip_index"],
                 datapoint["structured_verb"],
-                pred_verb,
+                pred_verb_prompt,
+                pred_structured_verb,
             )
-    wandb_log_dict: dict[str, Any] = {"verb_f1": verb_f1.compute()}
+
+        # Second, classify nouns
+        preprocessed = preprocessor.preprocess(
+            noun_prompts,
+            preprocessor.few_shot_prompt + f" The camera wearer {pred_verb_prompt}",
+            datapoint,
+            few_shot_examples,
+        )
+        preprocessed["pixel_values"] = preprocessed["pixel_values"].to(
+            dtype=model.dtype, device=model.device
+        )
+        preprocessed["prompt_input_ids"] = preprocessed["prompt_input_ids"].to(
+            device=model.device
+        )
+        preprocessed["prompt_video_causal_mask"] = preprocessed[
+            "prompt_video_causal_mask"
+        ].to(device=model.device)
+        preprocessed["class_input_ids"] = preprocessed["class_input_ids"].to(
+            device=model.device
+        )
+        preprocessed["class_attention_mask"] = preprocessed["class_attention_mask"].to(
+            device=model.device
+        )
+        # (1, num_verb_prompts)
+        log_likelihood = model.classify(
+            **preprocessed, class_batch_size=class_batch_size
+        )
+        pred_noun_prompt = noun_prompts[log_likelihood.argmax(dim=-1)]
+        pred_structured_noun = structured_noun_prompts[pred_noun_prompt]
+        noun_f1(
+            torch.tensor([noun_id_map[pred_structured_noun]]),
+            torch.tensor([noun_id_map[datapoint["structured_noun"]]]),
+        )
+        if print_noun_preds:
+            print(
+                f"Predicted Noun: {pred_structured_noun}, "
+                f'Ground Truth: {datapoint["structured_noun"]}'
+            )
+        if noun_pred_table is not None:
+            noun_pred_table.add_data(
+                datapoint["frame_path"],
+                datapoint["video_uid"],
+                datapoint["clip_index"],
+                datapoint["structured_noun"],
+                pred_noun_prompt,
+                pred_structured_noun,
+            )
+    wandb_log_dict: dict[str, Any] = {
+        "verb_f1": verb_f1.compute(),
+        "noun_f1": noun_f1.compute(),
+    }
     print(f"Verb F1: {wandb_log_dict['verb_f1']}")
+    print(f"Noun F1: {wandb_log_dict['noun_f1']}")
     if verb_pred_table is not None:
         wandb_log_dict["verb_pred_table"] = verb_pred_table
+    if noun_pred_table is not None:
+        wandb_log_dict["noun_pred_table"] = noun_pred_table
     wandb.log(wandb_log_dict)
 
 
@@ -258,11 +343,19 @@ if __name__ == "__main__":
     parser.add_argument("--num_few_shot_dataloader_workers", default=0, type=int)
     parser.add_argument("--fho_lta_taxonomy", required=True)
     parser.add_argument("--fho_main", required=True)
+    parser.add_argument(
+        "--structured_verb_prompt", default="eval-data/structured_verb_prompt.csv"
+    )
+    parser.add_argument(
+        "--structured_noun_prompt", default="eval-data/structured_noun_prompt.csv"
+    )
     parser.add_argument("--train_narrated_actions_dir", required=True)
     parser.add_argument("--eval_narrated_actions_dir", required=True)
     parser.add_argument("--num_shot", required=True, type=int)
     parser.add_argument("--log_verb_preds", action="store_true")
     parser.add_argument("--print_verb_preds", action="store_true")
+    parser.add_argument("--log_noun_preds", action="store_true")
+    parser.add_argument("--print_noun_preds", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=0, type=int)
     parser.add_argument("--random-seed", type=int, default=42)
     parser.add_argument("--class_batch_size", type=int, default=None)
@@ -301,6 +394,22 @@ if __name__ == "__main__":
         args.num_eval_datapoints,
     )
 
+    with open(Path(__file__).parent / args.structured_verb_prompt, newline="") as f:
+        reader = csv.DictReader(f)
+        structured_verb_prompts: dict[str, str] = {}
+        for row in reader:
+            structured_verb_prompts[row["prompt"]] = row["structured_verb"]
+
+    assert set(fho_lta_taxonomy["verbs"]) == set(structured_verb_prompts.values())
+
+    with open(Path(__file__).parent / args.structured_noun_prompt, newline="") as f:
+        reader = csv.DictReader(f)
+        structured_noun_prompts: dict[str, str] = {}
+        for row in reader:
+            structured_noun_prompts[row["prompt"]] = row["structured_noun"]
+
+    assert set(fho_lta_taxonomy["nouns"]) == set(structured_noun_prompts.values())
+
     preprocessor = Preprocessor(
         processor, "Question: What is the camera wearer doing? Answer:"
     )
@@ -313,8 +422,12 @@ if __name__ == "__main__":
         model,
         preprocessor,
         fho_lta_taxonomy["verbs"],
+        structured_verb_prompts,
         fho_lta_taxonomy["nouns"],
+        structured_noun_prompts,
         args.log_verb_preds,
         args.print_verb_preds,
+        args.log_noun_preds,
+        args.print_noun_preds,
         args.class_batch_size,
     )

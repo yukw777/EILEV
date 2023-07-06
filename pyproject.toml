@@ -65,3 +65,6 @@ testpaths = [
 # which confuses isort, causing it to classify wandb
 # as a first-party library.
 known_third_party = ["wandb"]
+
+[tool.codespell]
+skip = "scripts/ego4d/eval-data/*.csv"
