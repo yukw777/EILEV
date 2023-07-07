@@ -45,11 +45,13 @@ PROMPTS = [
 
 def preprocess(
     tokenizer: PreTrainedTokenizer,
+    eos_token_id: int,
     datapoint: dict[str, Any],
     video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, torch.Tensor]:
     preprocessed = generate_input_ids_and_labels_from_interleaved(
         tokenizer,
+        eos_token_id,
         [
             (random.choice(PROMPTS), clean_narration_text(item["narration_text"]))
             for item in datapoint["items"]
@@ -117,6 +119,7 @@ def train() -> None:
         transform=partial(
             preprocess,
             processor.tokenizer,
+            model.config.text_config.eos_token_id,
             video_transform=Compose(
                 [
                     UniformTemporalSubsample(model_args.num_subsample_frames),
@@ -150,6 +153,7 @@ def train() -> None:
         transform=partial(
             preprocess,
             processor.tokenizer,
+            model.config.text_config.eos_token_id,
             video_transform=Compose(
                 [
                     UniformTemporalSubsample(model_args.num_subsample_frames),

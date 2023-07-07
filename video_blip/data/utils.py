@@ -127,10 +127,10 @@ def generate_input_ids_and_labels(
 
 def generate_input_ids_and_labels_from_interleaved(
     tokenizer: PreTrainedTokenizer,
+    eos_token_id: int,
     prompts_texts: list[tuple[str, str | None]],
     num_videos: int,
     text_video_map: list[list[int]],
-    append_eos: bool = True,
 ) -> dict[str, torch.Tensor]:
     """Generate input ids and labels from the given interleaved video/text data
     point. `text_video_map` specifies which videos are the last preceding
@@ -139,14 +139,18 @@ def generate_input_ids_and_labels_from_interleaved(
     are supported.
 
     :param tokenizer: tokenizer for tokenizing inputs and label
+    :param eos_token_id: eos token id. OPT-based Blip2 changed its eos token from "</s>"
+        to "\n", and this is reflected in the model config, but not in the tokenizer,
+        so we need to explicitly pass it. Very important for generation.
+        See https://github.com/huggingface/transformers/pull/21441 for more details.
     :param prompts_texts: list of tuples of prompts and texts. texts are for the LLM to
-        generate based on the prompts, and can be None if not needed.
+        generate based on the prompts, and can be None if not needed. Note that
+        if text is None, an eos token is not appended, which is useful for generation.
     :param num_videos: number of videos in this interleaved data point
     :param text_video_map: map between texts and their last preceding videos.
         each text can have zero, one or more (if there are multiple consecutive videos
         preceding the text) last preceding videos.
     :param decoder_only_lm: whether the LLM is decoder only or not
-    :param append_eos: whether to append eos token at the end. Useful for training
     :returns: preprocessed results including `input_ids`, `labels` and
         `video_causal_mask`.
         `input_ids` is a tensor of shape (num_tokens),
@@ -159,25 +163,22 @@ def generate_input_ids_and_labels_from_interleaved(
     labels: list[int] = []
     video_causal_mask: list[torch.Tensor] = []
     for i, (prompt, text) in enumerate(prompts_texts):
-        if i != 0:
-            # if not first, add a space in front to separate from the previous prompt
-            # text pair.
-            prompt = " " + prompt
-
-        # tokenize prompt
-        prompt_tokens = tokenizer(prompt, add_special_tokens=False).input_ids
-        if i == 0:
-            # if first, add a bos token
-            prompt_tokens = [tokenizer.bos_token_id] + prompt_tokens
+        # tokenize prompt. we explicitly prepend the prompt with a bos token,
+        # which is the default behavior of the OPT tokenizer.
+        # See https://huggingface.co/docs/transformers/model_doc/opt#overview
+        # for more details.
+        prompt_tokens = [tokenizer.bos_token_id] + tokenizer(
+            prompt, add_special_tokens=False
+        ).input_ids
 
         # tokenize text with a space in front to separate it from the prompt
+        # we always append an eos token to the target text
         if text is None:
             text_tokens = []
         else:
-            text_tokens = tokenizer(" " + text, add_special_tokens=False).input_ids
-        if i == len(prompts_texts) - 1 and append_eos:
-            # append eos if last
-            text_tokens.append(tokenizer.eos_token_id)
+            text_tokens = tokenizer(
+                " " + text if len(text) > 0 else text, add_special_tokens=False
+            ).input_ids + [eos_token_id]
 
         input_ids.extend(prompt_tokens + text_tokens)
         labels.extend([-100] * len(prompt_tokens) + text_tokens)

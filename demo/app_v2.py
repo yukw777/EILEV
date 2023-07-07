@@ -40,10 +40,11 @@ def respond(
 ) -> list[list[str | None | tuple]]:
     inputs = generate_input_ids_and_labels_from_interleaved(
         processor.tokenizer,
-        [(text_block, None) for text_block in state.text_blocks],
+        model.config.text_config.eos_token_id,
+        [(text_block, "") for text_block in state.text_blocks[:-1]]
+        + [(state.text_blocks[-1], None)],
         len(state.videos),
         state.text_block_video_map,
-        append_eos=False,
     )
 
     # process the inputs
