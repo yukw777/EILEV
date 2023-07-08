@@ -112,6 +112,7 @@ def eval(
     model: VideoBlipForConditionalGeneration,
     processor: Blip2Processor,
     batch_size: int,
+    use_video_causal_mask: bool,
     print_narration_texts: bool,
     log_narration_texts: bool,
     generation_config: dict,
@@ -138,15 +139,19 @@ def eval(
         ),
         desc="Generating",
     ):
-        generated_ids = model.generate(
-            pixel_values=datapoint["pixel_values"].to(
+        generate_kwargs = {
+            "pixel_values": datapoint["pixel_values"].to(
                 dtype=model.dtype, device=model.device
             ),
-            input_ids=datapoint["input_ids"].to(device=model.device),
-            attention_mask=datapoint["attention_mask"].to(device=model.device),
-            video_causal_mask=datapoint["video_causal_mask"].to(device=model.device),
+            "input_ids": datapoint["input_ids"].to(device=model.device),
+            "attention_mask": datapoint["attention_mask"].to(device=model.device),
             **generation_config,
-        )
+        }
+        if use_video_causal_mask:
+            generate_kwargs["video_causal_mask"] = datapoint["video_causal_mask"].to(
+                device=model.device
+            )
+        generated_ids = model.generate(**generate_kwargs)
         generated_texts = [
             text.strip()
             for text in processor.batch_decode(generated_ids, skip_special_tokens=True)
@@ -194,6 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--eval_narrated_actions_dir", required=True)
     parser.add_argument("--batch_size", default=1, type=int)
     parser.add_argument("--num_shot", required=True, type=int)
+    parser.add_argument("--no_video_causal_mask", action="store_true")
     parser.add_argument("--print_narration_texts", action="store_true")
     parser.add_argument("--log_narration_texts", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=0, type=int)
@@ -238,6 +244,7 @@ if __name__ == "__main__":
         model,
         processor,
         args.batch_size,
+        not args.no_video_causal_mask,
         args.print_narration_texts,
         args.log_narration_texts,
         json.loads(args.generation_config),
