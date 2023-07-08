@@ -39,7 +39,7 @@ class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForVideoSeq2Seq):
         # pad_to_multiple_of.
         max_text_token_len = collated["attention_mask"].size(1)
         max_video_token_len = max(mask.size(1) for mask in video_causal_mask_list)
-        video_causal_mask = torch.stack(
+        collated["video_causal_mask"] = torch.stack(
             [
                 F.pad(
                     mask,
@@ -48,12 +48,18 @@ class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForVideoSeq2Seq):
                         max_video_token_len - mask.size(1),
                         0,
                         max_text_token_len - mask.size(0),
+                    )
+                    if self.tokenizer.padding_side == "right"
+                    else (
+                        0,
+                        max_video_token_len - mask.size(1),
+                        max_text_token_len - mask.size(0),
+                        0,
                     ),
                 )
                 for mask in video_causal_mask_list
             ]
         )
-        collated["video_causal_mask"] = video_causal_mask
         return collated
 
 

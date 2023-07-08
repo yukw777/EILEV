@@ -391,7 +391,7 @@ def test_generate_input_ids_and_labels_from_interleaved(
 
 
 @pytest.mark.parametrize(
-    "datapoints,attention_mask,expected",
+    "datapoints,attention_mask,padding_side,expected",
     [
         (
             [
@@ -400,6 +400,17 @@ def test_generate_input_ids_and_labels_from_interleaved(
                 }
             ],
             torch.ones(1, 3).long(),
+            "left",
+            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
+        ),
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            torch.ones(1, 3).long(),
+            "right",
             torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
         ),
         (
@@ -410,6 +421,20 @@ def test_generate_input_ids_and_labels_from_interleaved(
             ],
             # pad to multiple of 8
             torch.tensor([[1] * 3 + [0] * 5]),
+            "left",
+            torch.tensor(
+                [[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 0], [1, 0], [0, 1]]]
+            ),
+        ),
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            # pad to multiple of 8
+            torch.tensor([[1] * 3 + [0] * 5]),
+            "right",
             torch.tensor(
                 [[[1, 0], [1, 0], [0, 1], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]]
             ),
@@ -446,6 +471,72 @@ def test_generate_input_ids_and_labels_from_interleaved(
                 },
             ],
             torch.tensor([[1] * 3 + [0] * 4, [1] * 7, [1] * 6 + [0]]),
+            "left",
+            torch.tensor(
+                [
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                    ],
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 1, 0],
+                    ],
+                    [
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 1],
+                    ],
+                ]
+            ),
+        ),
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0],
+                            [1, 0, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 0, 1],
+                            [0, 0, 1],
+                        ]
+                    ),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 1],
+                        ]
+                    ),
+                },
+            ],
+            torch.tensor([[0] * 4 + [1] * 3, [1] * 7, [0] + [1] * 6]),
+            "right",
             torch.tensor(
                 [
                     [
@@ -511,6 +602,76 @@ def test_generate_input_ids_and_labels_from_interleaved(
             ],
             # pad to multiple of 8
             torch.tensor([[1] * 3 + [0] * 5, [1] * 7 + [0], [1] * 6 + [0] * 2]),
+            "left",
+            torch.tensor(
+                [
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                    ],
+                    [
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 1, 0],
+                    ],
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 1],
+                    ],
+                ]
+            ),
+        ),
+        (
+            [
+                {
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0],
+                            [1, 0, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 0, 1],
+                            [0, 0, 1],
+                        ]
+                    ),
+                },
+                {
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 1],
+                        ]
+                    ),
+                },
+            ],
+            # pad to multiple of 8
+            torch.tensor([[0] * 5 + [1] * 3, [0] + [1] * 7, [0] * 2 + [1] * 6]),
+            "right",
             torch.tensor(
                 [
                     [
@@ -549,12 +710,14 @@ def test_generate_input_ids_and_labels_from_interleaved(
     ],
 )
 def test_data_collator_for_interleaved_video_seq2seq(
-    datapoints, attention_mask, expected
+    datapoints, attention_mask, padding_side, expected
 ):
     with patch(
         "video_blip.data.utils.DataCollatorForVideoSeq2Seq.__call__",
         return_value=BatchEncoding(data={"attention_mask": attention_mask}),
     ):
-        collator = DataCollatorForInterleavedVideoSeq2Seq(Mock())
+        collator = DataCollatorForInterleavedVideoSeq2Seq(
+            Mock(padding_side=padding_side)
+        )
         collated = collator(datapoints)
         assert collated["video_causal_mask"].equal(expected)
