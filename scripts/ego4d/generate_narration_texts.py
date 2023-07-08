@@ -18,37 +18,88 @@ from video_blip.model.utils import process
 from video_blip.model.v2 import VideoBlipForConditionalGeneration
 
 
-class Preprocessor:
-    def __init__(self, processor: Blip2Processor, prompt: str) -> None:
-        self.processor = processor
-        self.collator = DataCollatorForInterleavedVideoSeq2Seq(processor.tokenizer)
-        self.prompt = prompt
+class DataCollator(DataCollatorForInterleavedVideoSeq2Seq):
+    def __call__(self, features, return_tensors=None):
+        narration_texts = [feature.pop("narration_text") for feature in features]
+        frame_paths = [feature.pop("frame_path") for feature in features]
+        video_uids = [feature.pop("video_uid") for feature in features]
+        clip_indexes = [feature.pop("clip_index") for feature in features]
 
-    def preprocess(
-        self, datapoint: dict[str, Any], few_shot_examples: list[dict[str, Any]]
-    ) -> dict[str, torch.Tensor]:
-        few_shot_prompts: list[tuple[str, str | None]] = [
-            (self.prompt + " " + clean_narration_text(example["narration_text"]), "")
-            for example in few_shot_examples
-        ]
+        collated = super().__call__(features, return_tensors)
+
+        collated["narration_text"] = narration_texts
+        collated["frame_path"] = frame_paths
+        collated["video_uid"] = video_uids
+        collated["clip_index"] = clip_indexes
+        return collated
+
+
+class Preprocessor:
+    def __init__(
+        self,
+        processor: Blip2Processor,
+        prompt: str,
+        few_shot_dataset: Ego4dFHOMainFrameDataset,
+        num_shot: int,
+    ) -> None:
+        self.processor = processor
+        self.prompt = prompt
+        self.few_shot_dataloader_iter = (
+            iter(
+                DataLoader(
+                    few_shot_dataset,
+                    sampler=RandomSampler(
+                        # set num_samples to a high number so we can keep drawing
+                        # few shot examples.
+                        # Based on https://discuss.pytorch.org/t/infinite-random-sampler/30171/4 # noqa: E501
+                        few_shot_dataset,
+                        replacement=True,
+                        num_samples=int(1e10),
+                    ),
+                    batch_size=num_shot,
+                )
+            )
+            if num_shot > 0
+            else None
+        )
+        self.num_shot = num_shot
+
+    def __call__(self, datapoint: dict[str, Any]) -> dict[str, Any]:
+        few_shot_prompts: list[tuple[str, str | None]] = []
+        if self.few_shot_dataloader_iter is not None:
+            few_shot_examples = next(self.few_shot_dataloader_iter)
+            few_shot_prompts = [
+                (self.prompt + " " + clean_narration_text(narration_text), "")
+                for narration_text in few_shot_examples["narration_text"]
+            ]
+            # (num_videos, channel, time, height, width)
+            pixel_values = process(
+                self.processor,
+                video=torch.cat(
+                    [few_shot_examples["video"], datapoint["video"].unsqueeze(0)], dim=0
+                ),
+            ).pixel_values
+        else:
+            # (num_videos, channel, time, height, width)
+            pixel_values = process(
+                self.processor, video=datapoint["video"].unsqueeze(0)
+            ).pixel_values
+
         # input_ids: (prompt_seq_len)
         # labels: (prompt_seq_len)
         # video_causal_mask: (prompt_seq_len, num_videos)
         inputs = generate_input_ids_and_labels_from_interleaved(
             self.processor.tokenizer,
             few_shot_prompts + [(self.prompt, None)],
-            len(few_shot_examples) + 1,
-            [[i] for i in range(len(few_shot_examples) + 1)],
+            self.num_shot + 1,
+            [[i] for i in range(self.num_shot + 1)],
         )
-        # (num_videos, channel, time, height, width)
-        pixel_values = process(
-            self.processor,
-            video=torch.stack(
-                [item["video"] for item in few_shot_examples + [datapoint]]
-            ),
-        ).pixel_values
 
         return {
+            "narration_text": clean_narration_text(datapoint["narration_text"]),
+            "frame_path": datapoint["frame_path"],
+            "video_uid": datapoint["video_uid"],
+            "clip_index": datapoint["clip_index"],
             # (num_videos, channel, time, height, width)
             "pixel_values": pixel_values,
             **inputs,
@@ -57,12 +108,10 @@ class Preprocessor:
 
 def eval(
     eval_dataset: Ego4dFHOMainFrameDataset,
-    train_dataset: Ego4dFHOMainFrameDataset,
-    num_shot: int,
     num_dataloader_workers: int,
-    num_few_shot_dataloader_workers: int,
     model: VideoBlipForConditionalGeneration,
-    preprocessor: Preprocessor,
+    processor: Blip2Processor,
+    batch_size: int,
     print_narration_texts: bool,
     log_narration_texts: bool,
     generation_config: dict,
@@ -79,65 +128,57 @@ def eval(
         )
     else:
         table = None
-    few_shot_dataloader_iter = (
-        iter(
-            DataLoader(
-                train_dataset,
-                sampler=RandomSampler(
-                    # set num_samples to a high number so we can keep drawing few shot
-                    # examples. Based on https://discuss.pytorch.org/t/infinite-random-sampler/30171/4 # noqa: E501
-                    train_dataset,
-                    replacement=True,
-                    num_samples=int(1e10),
-                ),
-                batch_size=None,
-                num_workers=num_few_shot_dataloader_workers,
-                pin_memory=True,
-            )
-        )
-        if num_shot > 0
-        else None
-    )
     for datapoint in tqdm(
         DataLoader(
             eval_dataset,
-            batch_size=None,
+            batch_size=batch_size,
             num_workers=num_dataloader_workers,
+            collate_fn=DataCollator(processor.tokenizer),
             pin_memory=True,
         ),
-        desc="Evaluating",
+        desc="Generating",
     ):
-        few_shot_examples = (
-            [next(few_shot_dataloader_iter) for _ in range(num_shot)]
-            if few_shot_dataloader_iter is not None
-            else []
-        )
-        preprocessed = preprocessor.preprocess(datapoint, few_shot_examples)
         generated_ids = model.generate(
-            pixel_values=preprocessed["pixel_values"]
-            .to(dtype=model.dtype, device=model.device)
-            .unsqueeze(0),
-            input_ids=preprocessed["input_ids"].to(device=model.device).unsqueeze(0),
-            video_causal_mask=preprocessed["video_causal_mask"]
-            .to(device=model.device)
-            .unsqueeze(0),
+            pixel_values=datapoint["pixel_values"].to(
+                dtype=model.dtype, device=model.device
+            ),
+            input_ids=datapoint["input_ids"].to(device=model.device),
+            attention_mask=datapoint["attention_mask"].to(device=model.device),
+            video_causal_mask=datapoint["video_causal_mask"].to(device=model.device),
             **generation_config,
         )
-        generated_text = preprocessor.processor.batch_decode(
-            generated_ids, skip_special_tokens=True
-        )[0].strip()
-        ground_truth = clean_narration_text(datapoint["narration_text"])
+        generated_texts = [
+            text.strip()
+            for text in processor.batch_decode(generated_ids, skip_special_tokens=True)
+        ]
+        ground_truth_texts = [text for text in datapoint["narration_text"]]
         if print_narration_texts:
-            print(f"Generated text: {generated_text}")
-            print(f"Ground-truth text: {ground_truth}")
+            for generated_text, ground_truth_text in zip(
+                generated_texts, ground_truth_texts
+            ):
+                print(f"Generated text: {generated_text}")
+                print(f"Ground-truth text: {ground_truth_text}")
         if table is not None:
-            table.add_data(
+            for (
+                frame_path,
+                video_uid,
+                clip_index,
+                generated_text,
+                ground_truth_text,
+            ) in zip(
                 datapoint["frame_path"],
                 datapoint["video_uid"],
                 datapoint["clip_index"],
-                generated_text,
-                ground_truth,
-            )
+                generated_texts,
+                ground_truth_texts,
+            ):
+                table.add_data(
+                    frame_path,
+                    video_uid,
+                    clip_index,
+                    generated_text,
+                    ground_truth_text,
+                )
     if table is not None:
         wandb.log({"generated": table})
 
@@ -149,9 +190,9 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", choices=["fp32", "fp16", "bfloat16"], default="fp32")
     parser.add_argument("--num_dataloader_workers", default=0, type=int)
-    parser.add_argument("--num_few_shot_dataloader_workers", default=0, type=int)
-    parser.add_argument("--train_narrated_actions_dir", required=True)
+    parser.add_argument("--few_shot_narrated_actions_dir", required=True)
     parser.add_argument("--eval_narrated_actions_dir", required=True)
+    parser.add_argument("--batch_size", default=1, type=int)
     parser.add_argument("--num_shot", required=True, type=int)
     parser.add_argument("--print_narration_texts", action="store_true")
     parser.add_argument("--log_narration_texts", action="store_true")
@@ -176,24 +217,27 @@ if __name__ == "__main__":
     ).to(args.device)
     if args.processor is None:
         args.processor = args.model
-    processor = Blip2Processor.from_pretrained(args.processor)
 
-    train_dataset = Ego4dFHOMainFrameDataset(args.train_narrated_actions_dir)
-    eval_dataset = Ego4dFHOMainFrameDataset(args.eval_narrated_actions_dir)
+    # in order to support batch generation, we need to pad on the left side
+    processor = Blip2Processor.from_pretrained(args.processor, padding_side="left")
+    eval_dataset = Ego4dFHOMainFrameDataset(
+        args.eval_narrated_actions_dir,
+        transform=Preprocessor(
+            processor,
+            "Question: What is the camera wearer doing? Answer:",
+            Ego4dFHOMainFrameDataset(args.few_shot_narrated_actions_dir),
+            args.num_shot,
+        ),
+    )
     if args.num_eval_datapoints > 0 and len(eval_dataset) > args.num_eval_datapoints:
         eval_dataset.data = eval_dataset.data[: args.num_eval_datapoints]
 
-    preprocessor = Preprocessor(
-        processor, "Question: What is the camera wearer doing? Answer:"
-    )
     eval(
         eval_dataset,
-        train_dataset,
-        args.num_shot,
         args.num_dataloader_workers,
-        args.num_few_shot_dataloader_workers,
         model,
-        preprocessor,
+        processor,
+        args.batch_size,
         args.print_narration_texts,
         args.log_narration_texts,
         json.loads(args.generation_config),
