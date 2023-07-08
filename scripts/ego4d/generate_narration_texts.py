@@ -204,7 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("--log_narration_texts", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=0, type=int)
     parser.add_argument("--random_seed", type=int, default=42)
-    parser.add_argument("--generation_config", default="{}")
+    parser.add_argument("--generation_config", default='{"max_new_tokens": 512}')
     args = parser.parse_args()
 
     torch.manual_seed(args.random_seed)
@@ -238,6 +238,9 @@ if __name__ == "__main__":
     if args.num_eval_datapoints > 0 and len(eval_dataset) > args.num_eval_datapoints:
         eval_dataset.data = eval_dataset.data[: args.num_eval_datapoints]
 
+    generation_config = json.loads(args.generation_config)
+    if "max_new_tokens" not in generation_config:
+        generation_config["max_new_tokens"] = 512
     eval(
         eval_dataset,
         args.num_dataloader_workers,
@@ -247,5 +250,5 @@ if __name__ == "__main__":
         not args.no_video_causal_mask,
         args.print_narration_texts,
         args.log_narration_texts,
-        json.loads(args.generation_config),
+        generation_config,
     )
