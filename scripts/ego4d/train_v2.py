@@ -45,13 +45,11 @@ PROMPTS = [
 
 def preprocess(
     tokenizer: PreTrainedTokenizer,
-    eos_token_id: int,
     datapoint: dict[str, Any],
     video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> dict[str, torch.Tensor]:
     preprocessed = generate_input_ids_and_labels_from_interleaved(
         tokenizer,
-        eos_token_id,
         [
             (random.choice(PROMPTS), clean_narration_text(item["narration_text"]))
             for item in datapoint["items"]
@@ -104,6 +102,9 @@ def train() -> None:
         model_args.model_name_or_path,
         low_cpu_mem_usage=False if is_deepspeed_zero3_enabled() else True,
     )
+    # OPT-based BLILP2 changes its eos token from `</s>` to `\n` for generation.
+    # Let's reset it back to the original OPT eos token from the tokenizer.
+    model.config.text_config.eos_token_id = processor.tokenizer.eos_token_id
     # freeze everything except for qformer
     for param in model.vision_model.parameters():
         param.requires_grad = False
@@ -119,7 +120,6 @@ def train() -> None:
         transform=partial(
             preprocess,
             processor.tokenizer,
-            model.config.text_config.eos_token_id,
             video_transform=Compose(
                 [
                     UniformTemporalSubsample(model_args.num_subsample_frames),
@@ -153,7 +153,6 @@ def train() -> None:
         transform=partial(
             preprocess,
             processor.tokenizer,
-            model.config.text_config.eos_token_id,
             video_transform=Compose(
                 [
                     UniformTemporalSubsample(model_args.num_subsample_frames),

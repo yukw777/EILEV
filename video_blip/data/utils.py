@@ -127,7 +127,6 @@ def generate_input_ids_and_labels(
 
 def generate_input_ids_and_labels_from_interleaved(
     tokenizer: PreTrainedTokenizer,
-    eos_token_id: int,
     prompts_texts: list[tuple[str, str | None]],
     num_videos: int,
     text_video_map: list[list[int]],
@@ -139,10 +138,6 @@ def generate_input_ids_and_labels_from_interleaved(
     are supported.
 
     :param tokenizer: tokenizer for tokenizing inputs and label
-    :param eos_token_id: eos token id. OPT-based Blip2 changed its eos token from "</s>"
-        to "\n", and this is reflected in the model config, but not in the tokenizer,
-        so we need to explicitly pass it. Very important for generation.
-        See https://github.com/huggingface/transformers/pull/21441 for more details.
     :param prompts_texts: list of tuples of prompts and texts. texts are for the LLM to
         generate based on the prompts, and can be None if not needed. Note that
         if text is None, an eos token is not appended, which is useful for generation.
@@ -163,22 +158,24 @@ def generate_input_ids_and_labels_from_interleaved(
     labels: list[int] = []
     video_causal_mask: list[torch.Tensor] = []
     for i, (prompt, text) in enumerate(prompts_texts):
-        # tokenize prompt. we explicitly prepend the prompt with a bos token,
-        # which is the default behavior of the OPT tokenizer.
-        # See https://huggingface.co/docs/transformers/model_doc/opt#overview
-        # for more details.
-        prompt_tokens = [tokenizer.bos_token_id] + tokenizer(
-            prompt, add_special_tokens=False
-        ).input_ids
-
-        # tokenize text with a space in front to separate it from the prompt
-        # we always append an eos token to the target text
         if text is None:
+            text_tokens: list[int] = []
+        elif text == "":
+            # append a newline separator to the prompt since text is an empty string
+            prompt += "\n"
             text_tokens = []
         else:
+            # prepend a space to separate the text from the prompt
             text_tokens = tokenizer(
-                " " + text if len(text) > 0 else text, add_special_tokens=False
-            ).input_ids + [eos_token_id]
+                " " + text + "\n", add_special_tokens=False
+            ).input_ids
+        prompt_tokens = tokenizer(prompt, add_special_tokens=False).input_ids
+        if i == 0:
+            # if first prompt, prepend a bos token
+            prompt_tokens = [tokenizer.bos_token_id] + prompt_tokens
+        if i == len(prompts_texts) - 1 and text is not None:
+            # if last text, append eos
+            text_tokens.append(tokenizer.eos_token_id)
 
         input_ids.extend(prompt_tokens + text_tokens)
         labels.extend([-100] * len(prompt_tokens) + text_tokens)
