@@ -1,7 +1,6 @@
 import random
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from functools import partial
 from typing import Any
 
 import torch
@@ -43,27 +42,28 @@ PROMPTS = [
 ]
 
 
-def preprocess(
-    tokenizer: PreTrainedTokenizer,
-    datapoint: dict[str, Any],
-    video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None,
-) -> dict[str, torch.Tensor]:
-    preprocessed = generate_input_ids_and_labels_from_interleaved(
-        tokenizer,
-        [
-            (random.choice(PROMPTS), clean_narration_text(item["narration_text"]))
-            for item in datapoint["items"]
-        ],
-        len(datapoint["items"]),
-        [[i] for i in range(len(datapoint["items"]))],
-    )
-    videos = [item["video"] for item in datapoint["items"]]
-    if video_transform is not None:
-        for i in range(len(videos)):
-            videos[i] = video_transform(videos[i])
-    preprocessed["pixel_values"] = torch.stack(videos)
+@dataclass
+class Preprocessor:
+    tokenizer: PreTrainedTokenizer
+    video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None
 
-    return preprocessed
+    def __call__(self, datapoint: dict[str, Any]) -> dict[str, torch.Tensor]:
+        preprocessed = generate_input_ids_and_labels_from_interleaved(
+            self.tokenizer,
+            [
+                (random.choice(PROMPTS), clean_narration_text(item["narration_text"]))
+                for item in datapoint["items"]
+            ],
+            len(datapoint["items"]),
+            [[i] for i in range(len(datapoint["items"]))],
+        )
+        videos = [item["video"] for item in datapoint["items"]]
+        if self.video_transform is not None:
+            for i in range(len(videos)):
+                videos[i] = self.video_transform(videos[i])
+        preprocessed["pixel_values"] = torch.stack(videos)
+
+        return preprocessed
 
 
 # NOTE: We can't use 3.10's new X|Y syntax b/c HfArgumentParser doesn't support it.
@@ -117,8 +117,7 @@ def train() -> None:
     train_data = Ego4dFHOMainFrameInterleavedDataset(
         data_args.train_narrated_actions_dir,
         num_videos_per_sample=data_args.num_videos_per_sample,
-        transform=partial(
-            preprocess,
+        transform=Preprocessor(
             processor.tokenizer,
             video_transform=Compose(
                 [
@@ -150,8 +149,7 @@ def train() -> None:
     val_data = Ego4dFHOMainFrameInterleavedDataset(
         data_args.val_narrated_actions_dir,
         num_videos_per_sample=data_args.num_videos_per_sample,
-        transform=partial(
-            preprocess,
+        transform=Preprocessor(
             processor.tokenizer,
             video_transform=Compose(
                 [
