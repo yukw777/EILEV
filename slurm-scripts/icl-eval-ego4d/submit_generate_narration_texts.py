@@ -36,8 +36,7 @@ if args.transformers_cache is not None:
     transformers_cache = f"export TRANSFORMERS_CACHE={args.transformers_cache}"
 
 
-cmd = rf"""sbatch <<EOT
-#!/bin/bash
+script = rf"""#!/bin/bash
 
 {partition}
 #SBATCH --time={args.time}
@@ -66,6 +65,5 @@ poetry run python ../../scripts/ego4d/generate_narration_texts.py \
   --log_narration_texts \
   {no_video_causal_mask} \
   {gen_config}
-EOT
 """  # noqa: E501
-subprocess.call(cmd, shell=True)
+subprocess.run(["sbatch"], input=script, text=True)
