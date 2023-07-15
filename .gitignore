@@ -146,4 +146,4 @@ dmypy.json
 /examples/notebooks/*.gif
 
 # wandb
-/wandb/
+wandb/
