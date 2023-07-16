@@ -76,6 +76,7 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     --save_strategy steps \
     --save_steps 200 \
     --save_total_limit 3 \
+    --logging_steps 10 \
     --report_to wandb \
     --run_name {args.run_name}
 """  # noqa: E501
