@@ -40,7 +40,7 @@ script = rf"""#!/bin/bash
 
 module load python/3.10.4
 {transformers_cache}
-poetry run python ../../scripts/extract_frames.py \
+poetry run python ../../scripts/ego4d/extract_frames.py \
     --fho_main_path {args.fho_main_path} \
     --split_path {os.path.join(args.split_path, f'fho_main_{args.split}.json')} \
     --video_dir {args.video_dir} \
