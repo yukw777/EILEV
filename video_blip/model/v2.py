@@ -249,6 +249,7 @@ class VideoOPTDecoder(OPTDecoder):
                 torch.eye(num_videos, device=device)
                 .repeat_interleave(self.config.qformer_num_query_tokens, dim=0)
                 .repeat_interleave(self.config.qformer_num_query_tokens, dim=1)
+                .tril()
             )
 
             # 2. video tokens don't attend to text tokens

@@ -175,17 +175,17 @@ from video_blip.model.v2 import (
             torch.tensor(
                 [
                     [
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [0.0] + [torch.finfo(torch.float).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
                         [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 7,
+                        + [0.0]
+                        + [torch.finfo(torch.float).min] * 8,
                         [torch.finfo(torch.float).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float).min] * 7,
                         [torch.finfo(torch.float).min] * 4
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 5,
+                        + [0.0]
+                        + [torch.finfo(torch.float).min] * 6,
                         [torch.finfo(torch.float).min] * 4
                         + [0.0] * 2
                         + [torch.finfo(torch.float).min] * 5,
@@ -212,17 +212,17 @@ from video_blip.model.v2 import (
                         + [torch.finfo(torch.float).min] * 2,
                     ],
                     [
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [0.0] + [torch.finfo(torch.float).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
                         [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 7,
+                        + [0.0]
+                        + [torch.finfo(torch.float).min] * 8,
                         [torch.finfo(torch.float).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float).min] * 7,
                         [torch.finfo(torch.float).min] * 4
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 5,
+                        + [0.0]
+                        + [torch.finfo(torch.float).min] * 6,
                         [torch.finfo(torch.float).min] * 4
                         + [0.0] * 2
                         + [torch.finfo(torch.float).min] * 5,
@@ -247,17 +247,17 @@ from video_blip.model.v2 import (
                         [torch.finfo(torch.float).min] * 4 + [0.0] * 2 + [0.0] * 5,
                     ],
                     [
-                        [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
+                        [0.0] + [torch.finfo(torch.float).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float).min] * 9,
                         [torch.finfo(torch.float).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 7,
+                        + [0.0]
+                        + [torch.finfo(torch.float).min] * 8,
                         [torch.finfo(torch.float).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float).min] * 7,
                         [torch.finfo(torch.float).min] * 4
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float).min] * 5,
+                        + [0.0]
+                        + [torch.finfo(torch.float).min] * 6,
                         [torch.finfo(torch.float).min] * 4
                         + [0.0] * 2
                         + [torch.finfo(torch.float).min] * 5,
@@ -316,17 +316,17 @@ from video_blip.model.v2 import (
             torch.tensor(
                 [
                     [
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [0.0] + [torch.finfo(torch.float16).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
                         [torch.finfo(torch.float16).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float16).min] * 7,
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min] * 8,
                         [torch.finfo(torch.float16).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 7,
                         [torch.finfo(torch.float16).min] * 4
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float16).min] * 5,
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min] * 6,
                         [torch.finfo(torch.float16).min] * 4
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 5,
@@ -353,17 +353,17 @@ from video_blip.model.v2 import (
                         + [torch.finfo(torch.float16).min] * 2,
                     ],
                     [
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [0.0] + [torch.finfo(torch.float16).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
                         [torch.finfo(torch.float16).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float16).min] * 7,
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min] * 8,
                         [torch.finfo(torch.float16).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 7,
                         [torch.finfo(torch.float16).min] * 4
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float16).min] * 5,
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min] * 6,
                         [torch.finfo(torch.float16).min] * 4
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 5,
@@ -388,17 +388,17 @@ from video_blip.model.v2 import (
                         [torch.finfo(torch.float16).min] * 4 + [0.0] * 2 + [0.0] * 5,
                     ],
                     [
-                        [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
+                        [0.0] + [torch.finfo(torch.float16).min] * 10,
                         [0.0] * 2 + [torch.finfo(torch.float16).min] * 9,
                         [torch.finfo(torch.float16).min] * 2
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float16).min] * 7,
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min] * 8,
                         [torch.finfo(torch.float16).min] * 2
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 7,
                         [torch.finfo(torch.float16).min] * 4
-                        + [0.0] * 2
-                        + [torch.finfo(torch.float16).min] * 5,
+                        + [0.0]
+                        + [torch.finfo(torch.float16).min] * 6,
                         [torch.finfo(torch.float16).min] * 4
                         + [0.0] * 2
                         + [torch.finfo(torch.float16).min] * 5,
