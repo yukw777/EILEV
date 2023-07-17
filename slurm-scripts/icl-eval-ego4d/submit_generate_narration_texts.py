@@ -8,6 +8,7 @@ parser.add_argument("--model", required=True)
 parser.add_argument("--shot", type=int, required=True)
 parser.add_argument("--few_shot_narrated_actions_dir", required=True)
 parser.add_argument("--eval_narrated_actions_dir", required=True)
+parser.add_argument("--job_name_prefix", required=True)
 parser.add_argument("--email")
 parser.add_argument("--time", default="00-01:00:00")
 parser.add_argument("--cpus", default=1, type=int)
@@ -40,7 +41,7 @@ script = rf"""#!/bin/bash
 
 {partition}
 #SBATCH --time={args.time}
-#SBATCH --job-name=video-blip-generate-narration-texts
+#SBATCH --job-name={args.job_name_prefix}-generate-narration-texts
 {email}
 {account}
 #SBATCH --nodes=1
@@ -53,7 +54,7 @@ script = rf"""#!/bin/bash
 module load python/3.10.4 cuda
 {transformers_cache}
 export WANDB_PROJECT={args.wandb_project}
-export WANDB_NAME=generate-narration-texts-{args.shot}-shot
+export WANDB_NAME={args.job_name_prefix}-generate-narration-texts-{args.shot}-shot
 poetry run python ../../scripts/ego4d/generate_narration_texts.py \
   --model {args.model} \
   --device cuda \
