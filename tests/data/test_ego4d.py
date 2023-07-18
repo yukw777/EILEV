@@ -1,9 +1,13 @@
 from fractions import Fraction
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+import pytest
 from pytorchvideo.data.clip_sampling import ClipInfo
 
-from video_blip.data.ego4d import NarratedActionClipSampler
+from video_blip.data.ego4d import (
+    Ego4dFHOMainFrameInterleavedDataset,
+    NarratedActionClipSampler,
+)
 
 
 def reverse(x: list[int]) -> None:
@@ -107,3 +111,558 @@ def test_narrated_action_clip_sampler() -> None:
     assert clip_sampler(0, 0, annotation_2) == ClipInfo(
         Fraction(6), Fraction(14), 2, 0, True
     )
+
+
+@pytest.mark.parametrize(
+    "data,expected",
+    [
+        (
+            [
+                {"id": 0, "structured_verb": "verb0", "structured_noun": "noun0"},
+                {"id": 1, "structured_verb": "verb0", "structured_noun": "noun0"},
+                {"id": 2, "structured_verb": "verb0", "structured_noun": "noun0"},
+                {"id": 3, "structured_verb": "verb0", "structured_noun": "noun0"},
+                {"id": 4, "structured_verb": "verb0", "structured_noun": "noun0"},
+                {"id": 5, "structured_verb": "verb1", "structured_noun": "noun1"},
+                {"id": 6, "structured_verb": "verb1", "structured_noun": "noun1"},
+                {"id": 7, "structured_verb": "verb1", "structured_noun": "noun1"},
+                {"id": 8, "structured_verb": "verb1", "structured_noun": "noun1"},
+                {"id": 9, "structured_verb": "verb1", "structured_noun": "noun1"},
+            ],
+            [
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 6,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 7,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 8,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 9,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 5,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 5,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 7,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 8,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 9,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 6,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 5,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 6,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 8,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 9,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 7,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 5,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 6,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 7,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 9,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 8,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 5,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 6,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 7,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 8,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 9,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun1",
+                        },
+                    ]
+                },
+            ],
+        ),
+        (
+            [
+                {"id": 0, "structured_verb": "verb0", "structured_noun": "noun0"},
+                {"id": 1, "structured_verb": "verb0", "structured_noun": "noun1"},
+                {"id": 2, "structured_verb": "verb1", "structured_noun": "noun2"},
+                {"id": 3, "structured_verb": "verb1", "structured_noun": "noun0"},
+                {"id": 4, "structured_verb": "verb2", "structured_noun": "noun1"},
+            ],
+            [
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun2",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb2",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun2",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb2",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun1",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb2",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun2",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun2",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb2",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun0",
+                        },
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 0,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 1,
+                            "structured_verb": "verb0",
+                            "structured_noun": "noun1",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 2,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun2",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 3,
+                            "structured_verb": "verb1",
+                            "structured_noun": "noun0",
+                        },
+                        {
+                            "pixel_values": "torch.tensor",
+                            "id": 4,
+                            "structured_verb": "verb2",
+                            "structured_noun": "noun1",
+                        },
+                    ]
+                },
+            ],
+        ),
+    ],
+)
+@patch("video_blip.data.ego4d.random.sample", new=lambda p, k: sorted(p)[:k])
+def test_ego4d_fho_main_frame_interleaved_dataset(data, expected):
+    with patch("video_blip.data.ego4d.Ego4dFHOMainFrameDataset") as mock_parent_dataset:
+        mock_parent_dataset_instance = Mock(data=data)
+        mock_parent_dataset_instance.__len__ = Mock(return_value=len(data))
+        mock_parent_dataset_instance.__getitem__ = Mock(
+            side_effect=lambda i: {"pixel_values": "torch.tensor", **data[i]}
+        )
+        mock_parent_dataset.return_value = mock_parent_dataset_instance
+        dataset = Ego4dFHOMainFrameInterleavedDataset("hi")
+        assert [d for d in dataset] == expected

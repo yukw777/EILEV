@@ -14,7 +14,7 @@ from pytorchvideo.data.clip_sampling import ClipInfo
 from pytorchvideo.data.video import VideoPathHandler
 from torch.utils.data import Dataset
 
-from video_blip.data.utils import C_REGEX, generate_chunks
+from video_blip.data.utils import C_REGEX
 
 logger = logging.getLogger(__name__)
 
@@ -239,34 +239,92 @@ class Ego4dFHOMainFrameInterleavedDataset(Dataset[dict[str, Any]]):
     def __init__(
         self,
         narrated_actions_dir: str,
-        num_videos_per_sample: int = 5,
+        num_in_context_examples_per_sample: int = 4,
+        verb_noun_ratio: float = 0.5,
         transform: Callable[[dict], Any] | None = None,
     ) -> None:
-        self.num_videos_per_sample = num_videos_per_sample
+        self.num_in_context_examples_per_sample = num_in_context_examples_per_sample
+        self.verb_noun_ratio = verb_noun_ratio
         self._dataset = Ego4dFHOMainFrameDataset(narrated_actions_dir)
 
-        # video_uid => [(dataset_index, clip), ...]
-        video_clip_map: dict[str, list[tuple[int, dict[str, Any]]]] = defaultdict(list)
-        for i, row in enumerate(self._dataset.data):
-            video_clip_map[row["video_uid"]].append((i, row))
-
-        # generate chunks for each video and add to self.data
-        self.data: list[list[int]] = []
-        for _, clips in video_clip_map.items():
-            # first, sort by clip index
-            clips.sort(key=lambda item: int(item[1]["clip_index"]))
-
-            # then chunk it and add the dataset index to data
-            for chunk in generate_chunks(clips, num_videos_per_sample):
-                self.data.append([i for i, _ in chunk])
+        # put datapoints into buckets based on their structured verbs and nouns
+        self.structured_verb_buckets: dict[str, set[int]] = defaultdict(set)
+        self.structured_noun_buckets: dict[str, set[int]] = defaultdict(set)
+        for i, datapoint in enumerate(self._dataset.data):
+            if datapoint["structured_verb"] not in {"", "[other]"}:
+                self.structured_verb_buckets[datapoint["structured_verb"]].add(i)
+            if datapoint["structured_noun"] != "":
+                self.structured_noun_buckets[datapoint["structured_noun"]].add(i)
 
         self._transform = transform
 
     def __getitem__(self, index: int) -> dict[str, Any]:
-        item = {"items": [self._dataset[i] for i in self.data[index]]}
+        datapoint = self._dataset[index]
+
+        verb_bucket = {
+            i
+            for i in self.structured_verb_buckets.get(
+                datapoint["structured_verb"], set()
+            )
+            # make sure to filter out the current example
+            if i != index
+        }
+        noun_bucket = {
+            i
+            for i in self.structured_noun_buckets.get(
+                datapoint["structured_noun"], set()
+            )
+            # make sure to filter out the current example
+            if i != index
+        }
+
+        def _sample(bucket: set[int], k: int) -> set[int]:
+            if len(bucket) >= k:
+                samples = set(random.sample(bucket, k))
+            else:
+                samples = set(bucket)
+            bucket -= samples
+            return samples
+
+        examples: set[int] = set()
+        num_additional_examples = self.num_in_context_examples_per_sample - len(
+            examples
+        )
+        while num_additional_examples > 0 and (
+            len(verb_bucket) > 0 or len(noun_bucket) > 0
+        ):
+            if len(verb_bucket) > 0 and len(noun_bucket) > 0:
+                num_verb_examples = int(num_additional_examples * self.verb_noun_ratio)
+                num_noun_examples = num_additional_examples - num_verb_examples
+            elif len(verb_bucket) == 0:
+                num_verb_examples = 0
+                num_noun_examples = num_additional_examples
+            else:
+                num_noun_examples = 0
+                num_verb_examples = num_additional_examples
+
+            examples |= _sample(verb_bucket, num_verb_examples)
+            examples |= _sample(noun_bucket, num_noun_examples)
+            num_additional_examples = self.num_in_context_examples_per_sample - len(
+                examples
+            )
+
+        if num_additional_examples > 0:
+            # there wasn't enough samples in verb and noun buckets, so sample from the
+            # rest of the dataset
+            examples |= _sample(
+                {i for i in range(len(self)) if i != index and i not in examples},
+                num_additional_examples,
+            )
+
+        # shuffle the in-context examples and append the main datapoint in the end
+        item = {
+            "items": [self._dataset[i] for i in random.sample(examples, len(examples))]
+            + [datapoint]
+        }
         if self._transform is not None:
             item = self._transform(item)
         return item
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self._dataset)
