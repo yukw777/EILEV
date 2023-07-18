@@ -199,7 +199,12 @@ def generate_input_ids_and_labels_from_interleaved(
             text_tokens.append(tokenizer.eos_token_id)
 
         input_ids.extend(prompt_tokens + text_tokens)
-        labels.extend([-100] * len(prompt_tokens) + text_tokens)
+        if i != len(prompts_texts) - 1:
+            # if not last, all the labels are ignored
+            labels.extend([-100] * (len(prompt_tokens) + len(text_tokens)))
+        else:
+            # if last, include the text tokens as labels
+            labels.extend([-100] * len(prompt_tokens) + text_tokens)
 
         # build video_causal_mask
         video_indices = text_video_map[i]
