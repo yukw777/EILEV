@@ -143,6 +143,21 @@ class Ego4dFHOMainDataset(LabeledVideoDataset):
                 item = transform(item)
             return item
 
+        def _get_structured_noun(action: dict) -> str | None:
+            if action["frames"] is None:
+                return None
+            for frame in action["frames"]:
+                if frame["frame_type"] != "pnr_frame":
+                    # some actions don't have contact frames so use pnr_frame
+                    continue
+                for box in frame["boxes"]:
+                    if (
+                        box["object_type"] == "object_of_change"
+                        and box["structured_noun"] is not None
+                    ):
+                        return box["structured_noun"]
+            return None
+
         super().__init__(
             [
                 (
@@ -154,6 +169,8 @@ class Ego4dFHOMainDataset(LabeledVideoDataset):
                                     "narration_timestamp_sec"
                                 ],
                                 "narration_text": action["narration_text"],
+                                "structured_verb": action["structured_verb"],
+                                "structured_noun": _get_structured_noun(action),
                             }
                             for interval in video_dict[video_uid]["annotated_intervals"]
                             for action in interval["narrated_actions"]

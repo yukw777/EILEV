@@ -26,14 +26,11 @@ parser.add_argument("--model_name_or_path", required=True)
 parser.add_argument("--num_subsample_frames", type=int, required=True)
 parser.add_argument("--num_workers", type=int, default=0)
 parser.add_argument("--max_num_narrated_actions", type=int, default=0)
+parser.add_argument("--csv_only", action="store_true")
 args = parser.parse_args()
 
 
-def process_narrated_action(
-    pixel_values: torch.Tensor, video_uid: str, clip_index: int
-) -> str:
-    frame_path = video_uid + "|" + str(clip_index)
-
+def extract_frames(pixel_values: torch.Tensor, frame_path: str) -> str:
     # Create a dir for the extracted frames
     frames_dir = os.path.join(args.frames_dir, frame_path)
     os.makedirs(frames_dir, exist_ok=True)
@@ -102,6 +99,8 @@ with open(
             "clip_index",
             "narration_timestamp_sec",
             "narration_text",
+            "structured_verb",
+            "structured_noun",
         ],
     )
 
@@ -113,9 +112,9 @@ with open(
         DataLoader(dataset, batch_size=None, num_workers=args.num_workers),
         desc="Extracting frames",
     ):
-        frame_path = process_narrated_action(
-            item["pixel_values"], item["video_uid"], item["clip_index"]
-        )
+        frame_path = item["video_uid"] + "|" + str(item["clip_index"])
+        if not args.csv_only:
+            extract_frames(item["pixel_values"], frame_path)
         csv_writer.writerow(
             {
                 "frame_path": frame_path,
@@ -123,6 +122,8 @@ with open(
                 "clip_index": item["clip_index"],
                 "narration_timestamp_sec": item["narration_timestamp_sec"],
                 "narration_text": item["narration_text"].strip(),
+                "structured_verb": item["structured_verb"],
+                "structured_noun": item["structured_noun"],
             }
         )
         num_extracted_narrated_action += 1
