@@ -5,7 +5,7 @@ from pprint import pprint
 import numpy as np
 import torch
 import wandb
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import CrossEncoder, SentenceTransformer, util
 from torchmetrics.text import BLEUScore
 from torchmetrics.text.bert import BERTScore
 from torchmetrics.text.rouge import ROUGEScore
@@ -28,6 +28,18 @@ def calc_sts_bi_encoder(
         convert_to_tensor=True,
     )
     results = util.pairwise_cos_sim(encoded_preds, encoded_target).tolist()
+    del model
+    torch.cuda.empty_cache()
+    return results
+
+
+def calc_sts_cross_encoder(
+    preds: list[str], target: list[str], batch_size: int, device: str
+) -> list[float]:
+    model = CrossEncoder("cross-encoder/stsb-roberta-large", device=device)
+    results = model.predict(
+        list(zip(preds, target)), batch_size=batch_size, show_progress_bar=True
+    ).tolist()
     del model
     torch.cuda.empty_cache()
     return results
@@ -66,6 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--bertscore_batch_size", default=64, type=int)
     parser.add_argument("--sts_bi_encoder_batch_size", default=64, type=int)
+    parser.add_argument("--sts_cross_encoder_batch_size", default=64, type=int)
     args = parser.parse_args()
     wandb.init(config=args)  # type: ignore
 
@@ -83,6 +96,9 @@ if __name__ == "__main__":
     sts_bi_encoder_results = calc_sts_bi_encoder(
         preds, target, args.sts_bi_encoder_batch_size, args.device
     )
+    sts_cross_encoder_results = calc_sts_cross_encoder(
+        preds, target, args.sts_cross_encoder_batch_size, args.device
+    )
 
     table = wandb.Table(
         columns=[
@@ -95,6 +111,7 @@ if __name__ == "__main__":
             "bert_score_precision",
             "bert_score_recall",
             "sts_bi_encoder_cos_sim",
+            "sts_cross_encoder_score",
         ]
     )
     for (
@@ -103,12 +120,14 @@ if __name__ == "__main__":
         bertscore_precision,
         bertscore_recall,
         sts_bi_encoder_cos_sim,
+        sts_cross_encoder_score,
     ) in zip(
         rows,
         bertscore_results["f1"],
         bertscore_results["precision"],
         bertscore_results["recall"],
         sts_bi_encoder_results,
+        sts_cross_encoder_results,
     ):
         table.add_data(
             row["frame_path"],
@@ -120,6 +139,7 @@ if __name__ == "__main__":
             bertscore_precision,
             bertscore_recall,
             sts_bi_encoder_cos_sim,
+            sts_cross_encoder_score,
         )
 
     log_dict = {
@@ -132,6 +152,7 @@ if __name__ == "__main__":
         "rougeL_precision": rouge_results["rougeL_precision"],
         "rougeL_recall": rouge_results["rougeL_recall"],
         "sts_bi_encoder_mean_cos_sim": np.array(sts_bi_encoder_results).mean(),
+        "sts_cross_encoder_mean_score": np.array(sts_cross_encoder_results).mean(),
     }
     pprint(log_dict)
     wandb.log(log_dict)
