@@ -3,10 +3,34 @@ import csv
 from pprint import pprint
 
 import numpy as np
+import torch
 import wandb
+from sentence_transformers import SentenceTransformer, util
 from torchmetrics.text import BLEUScore
 from torchmetrics.text.bert import BERTScore
 from torchmetrics.text.rouge import ROUGEScore
+
+
+def calc_sts_bi_encoder(
+    preds: list[str], target: list[str], batch_size: int, device: str
+) -> list[float]:
+    model = SentenceTransformer("all-mpnet-base-v2", device=device)
+    encoded_preds = model.encode(
+        preds,
+        batch_size=batch_size,
+        show_progress_bar=True,
+        convert_to_tensor=True,
+    )
+    encoded_target = model.encode(
+        target,
+        batch_size=batch_size,
+        show_progress_bar=True,
+        convert_to_tensor=True,
+    )
+    results = util.pairwise_cos_sim(encoded_preds, encoded_target).tolist()
+    del model
+    torch.cuda.empty_cache()
+    return results
 
 
 def calc_rouge(preds: list[str], target: list[str]) -> dict[str, float]:
@@ -20,7 +44,7 @@ def calc_bleu(preds: list[str], target: list[str]) -> float:
 
 
 def calc_bertscore(
-    preds: list[str], target: list[str], batch_size: int, device: "str"
+    preds: list[str], target: list[str], batch_size: int, device: str
 ) -> dict[str, list[float]]:
     bert_score = BERTScore(
         batch_size=batch_size,
@@ -30,7 +54,10 @@ def calc_bertscore(
         verbose=True,
     )
 
-    return bert_score(preds, target)
+    results = bert_score(preds, target)
+    del bert_score
+    torch.cuda.empty_cache()
+    return results
 
 
 if __name__ == "__main__":
@@ -38,6 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--gen_narration_file", required=True)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--bertscore_batch_size", default=64, type=int)
+    parser.add_argument("--sts_bi_encoder_batch_size", default=64, type=int)
     args = parser.parse_args()
     wandb.init(config=args)  # type: ignore
 
@@ -52,6 +80,9 @@ if __name__ == "__main__":
     )
     bleu_score = calc_bleu(preds, target)
     rouge_results = calc_rouge(preds, target)
+    sts_bi_encoder_results = calc_sts_bi_encoder(
+        preds, target, args.sts_bi_encoder_batch_size, args.device
+    )
 
     table = wandb.Table(
         columns=[
@@ -63,6 +94,7 @@ if __name__ == "__main__":
             "bert_score_f1",
             "bert_score_precision",
             "bert_score_recall",
+            "sts_bi_encoder_cos_sim",
         ]
     )
     for (
@@ -70,11 +102,13 @@ if __name__ == "__main__":
         bertscore_f1,
         bertscore_precision,
         bertscore_recall,
+        sts_bi_encoder_cos_sim,
     ) in zip(
         rows,
         bertscore_results["f1"],
         bertscore_results["precision"],
         bertscore_results["recall"],
+        sts_bi_encoder_results,
     ):
         table.add_data(
             row["frame_path"],
@@ -85,6 +119,7 @@ if __name__ == "__main__":
             bertscore_f1,
             bertscore_precision,
             bertscore_recall,
+            sts_bi_encoder_cos_sim,
         )
 
     log_dict = {
@@ -96,6 +131,7 @@ if __name__ == "__main__":
         "rougeL_fmeasure": rouge_results["rougeL_fmeasure"],
         "rougeL_precision": rouge_results["rougeL_precision"],
         "rougeL_recall": rouge_results["rougeL_recall"],
+        "sts_bi_encoder_mean_cos_sim": np.array(sts_bi_encoder_results).mean(),
     }
     pprint(log_dict)
     wandb.log(log_dict)
