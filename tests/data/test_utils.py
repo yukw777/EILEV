@@ -6,7 +6,6 @@ from transformers import BatchEncoding, Blip2Processor
 
 from video_blip.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
-    DataCollatorForVideoSeq2Seq,
     clean_narration_text,
     generate_input_ids_and_labels,
     generate_input_ids_and_labels_from_interleaved,
@@ -392,7 +391,8 @@ def test_generate_input_ids_and_labels_from_interleaved(
 
 
 @pytest.mark.parametrize(
-    "datapoints,expected_pixel_values,expected_video_causal_mask",
+    "datapoints,attention_mask,padding_side,expected_pixel_values,"
+    "expected_video_causal_mask",
     [
         (
             [
@@ -401,8 +401,52 @@ def test_generate_input_ids_and_labels_from_interleaved(
                     "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
                 }
             ],
+            torch.ones(1, 3).long(),
+            "left",
             torch.ones(1, 2, 1, 1, 1, 1).long(),
-            [torch.tensor([[1, 0], [1, 0], [0, 1]])],
+            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
+        ),
+        (
+            [
+                {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            torch.ones(1, 3).long(),
+            "right",
+            torch.ones(1, 2, 1, 1, 1, 1).long(),
+            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
+        ),
+        (
+            [
+                {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            # pad to multiple of 8
+            torch.tensor([[1] * 3 + [0] * 5]),
+            "left",
+            torch.ones(1, 2, 1, 1, 1, 1).long(),
+            torch.tensor(
+                [[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 0], [1, 0], [0, 1]]]
+            ),
+        ),
+        (
+            [
+                {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            # pad to multiple of 8
+            torch.tensor([[1] * 3 + [0] * 5]),
+            "right",
+            torch.ones(1, 2, 1, 1, 1, 1).long(),
+            torch.tensor(
+                [[[1, 0], [1, 0], [0, 1], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]]
+            ),
         ),
         (
             [
@@ -438,6 +482,8 @@ def test_generate_input_ids_and_labels_from_interleaved(
                     ),
                 },
             ],
+            torch.tensor([[1] * 3 + [0] * 4, [1] * 7, [1] * 6 + [0]]),
+            "left",
             torch.stack(
                 [
                     torch.concat(
@@ -449,136 +495,6 @@ def test_generate_input_ids_and_labels_from_interleaved(
                     torch.ones(4, 1, 1, 1, 1),
                 ]
             ),
-            [
-                torch.tensor([[1, 0, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0]]),
-                torch.tensor(
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 0],
-                        [0, 0, 1, 0],
-                    ]
-                ),
-                torch.tensor(
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 1],
-                    ]
-                ),
-            ],
-        ),
-    ],
-)
-def test_data_collator_for_video_seq2seq(
-    datapoints, expected_pixel_values, expected_video_causal_mask
-):
-    def mock_call(features, return_tensors):
-        return {
-            "video_causal_mask": [feature["video_causal_mask"] for feature in features]
-        }
-
-    with patch(
-        "video_blip.data.utils.DataCollatorForSeq2Seq.__call__", side_effect=mock_call
-    ):
-        collator = DataCollatorForVideoSeq2Seq(Mock())
-        collated = collator(datapoints)
-        assert collated["pixel_values"].equal(expected_pixel_values)
-        assert len(collated["video_causal_mask"]) == len(expected_video_causal_mask)
-        for video_causal_mask, expected in zip(
-            collated["video_causal_mask"], expected_video_causal_mask
-        ):
-            assert video_causal_mask.equal(expected)
-
-
-@pytest.mark.parametrize(
-    "datapoints,attention_mask,padding_side,expected",
-    [
-        (
-            [
-                {
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
-                }
-            ],
-            torch.ones(1, 3).long(),
-            "left",
-            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
-        ),
-        (
-            [
-                {
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
-                }
-            ],
-            torch.ones(1, 3).long(),
-            "right",
-            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
-        ),
-        (
-            [
-                {
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
-                }
-            ],
-            # pad to multiple of 8
-            torch.tensor([[1] * 3 + [0] * 5]),
-            "left",
-            torch.tensor(
-                [[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 0], [1, 0], [0, 1]]]
-            ),
-        ),
-        (
-            [
-                {
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
-                }
-            ],
-            # pad to multiple of 8
-            torch.tensor([[1] * 3 + [0] * 5]),
-            "right",
-            torch.tensor(
-                [[[1, 0], [1, 0], [0, 1], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]]
-            ),
-        ),
-        (
-            [
-                {
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
-                },
-                {
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0],
-                            [1, 0, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 0, 1],
-                            [0, 0, 1],
-                        ]
-                    ),
-                },
-                {
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0, 0],
-                            [1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 1],
-                        ]
-                    ),
-                },
-            ],
-            torch.tensor([[1] * 3 + [0] * 4, [1] * 7, [1] * 6 + [0]]),
-            "left",
             torch.tensor(
                 [
                     [
@@ -614,9 +530,11 @@ def test_data_collator_for_video_seq2seq(
         (
             [
                 {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
                 },
                 {
+                    "pixel_values": torch.ones(3, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor(
                         [
                             [1, 0, 0],
@@ -630,6 +548,7 @@ def test_data_collator_for_video_seq2seq(
                     ),
                 },
                 {
+                    "pixel_values": torch.ones(4, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor(
                         [
                             [1, 0, 0, 0],
@@ -644,6 +563,17 @@ def test_data_collator_for_video_seq2seq(
             ],
             torch.tensor([[0] * 4 + [1] * 3, [1] * 7, [0] + [1] * 6]),
             "right",
+            torch.stack(
+                [
+                    torch.concat(
+                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
+                    ),
+                    torch.concat(
+                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
+                    ),
+                    torch.ones(4, 1, 1, 1, 1),
+                ]
+            ),
             torch.tensor(
                 [
                     [
@@ -679,9 +609,11 @@ def test_data_collator_for_video_seq2seq(
         (
             [
                 {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
                 },
                 {
+                    "pixel_values": torch.ones(3, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor(
                         [
                             [1, 0, 0],
@@ -695,6 +627,7 @@ def test_data_collator_for_video_seq2seq(
                     ),
                 },
                 {
+                    "pixel_values": torch.ones(4, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor(
                         [
                             [1, 0, 0, 0],
@@ -710,6 +643,17 @@ def test_data_collator_for_video_seq2seq(
             # pad to multiple of 8
             torch.tensor([[1] * 3 + [0] * 5, [1] * 7 + [0], [1] * 6 + [0] * 2]),
             "left",
+            torch.stack(
+                [
+                    torch.concat(
+                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
+                    ),
+                    torch.concat(
+                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
+                    ),
+                    torch.ones(4, 1, 1, 1, 1),
+                ]
+            ),
             torch.tensor(
                 [
                     [
@@ -748,9 +692,11 @@ def test_data_collator_for_video_seq2seq(
         (
             [
                 {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
                 },
                 {
+                    "pixel_values": torch.ones(3, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor(
                         [
                             [1, 0, 0],
@@ -764,6 +710,7 @@ def test_data_collator_for_video_seq2seq(
                     ),
                 },
                 {
+                    "pixel_values": torch.ones(4, 1, 1, 1, 1),
                     "video_causal_mask": torch.tensor(
                         [
                             [1, 0, 0, 0],
@@ -779,6 +726,17 @@ def test_data_collator_for_video_seq2seq(
             # pad to multiple of 8
             torch.tensor([[0] * 5 + [1] * 3, [0] + [1] * 7, [0] * 2 + [1] * 6]),
             "right",
+            torch.stack(
+                [
+                    torch.concat(
+                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
+                    ),
+                    torch.concat(
+                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
+                    ),
+                    torch.ones(4, 1, 1, 1, 1),
+                ]
+            ),
             torch.tensor(
                 [
                     [
@@ -817,14 +775,29 @@ def test_data_collator_for_video_seq2seq(
     ],
 )
 def test_data_collator_for_interleaved_video_seq2seq(
-    datapoints, attention_mask, padding_side, expected
+    datapoints,
+    attention_mask,
+    padding_side,
+    expected_pixel_values,
+    expected_video_causal_mask,
 ):
+    def mock_call(features, return_tensors):
+        return BatchEncoding(
+            data={
+                "attention_mask": attention_mask,
+                "pixel_values": torch.stack(
+                    [feature.pop("pixel_values") for feature in features]
+                ),
+            }
+        )
+
     with patch(
         "video_blip.data.utils.DataCollatorForVideoSeq2Seq.__call__",
-        return_value=BatchEncoding(data={"attention_mask": attention_mask}),
+        side_effect=mock_call,
     ):
         collator = DataCollatorForInterleavedVideoSeq2Seq(
             Mock(padding_side=padding_side)
         )
         collated = collator(datapoints)
-        assert collated["video_causal_mask"].equal(expected)
+        assert collated["pixel_values"].equal(expected_pixel_values)
+        assert collated["video_causal_mask"].equal(expected_video_causal_mask)
