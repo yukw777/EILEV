@@ -17,6 +17,7 @@ parser.add_argument("--dataloader_num_workers", type=int, required=True)
 parser.add_argument("--train_batch_size", type=int, required=True)
 parser.add_argument("--gradient_accumulation_steps", type=int, required=True)
 parser.add_argument("--per_device_eval_batch_size", type=int, required=True)
+parser.add_argument("--num_videos_per_sample", type=int, required=True)
 parser.add_argument("--email")
 parser.add_argument("--transformers_cache")
 parser.add_argument("--wandb_project", default="video-blip")
@@ -57,7 +58,7 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     ../../scripts/ego4d/train_v2.py \
     --model_name_or_path {args.model} \
     --num_subsample_frames 8 \
-    --num_videos_per_sample 5 \
+    --num_videos_per_sample {args.num_videos_per_sample} \
     --train_narrated_actions_dir {args.train_narrated_actions_dir} \
     --val_narrated_actions_dir {args.val_narrated_actions_dir} \
     --output_dir {output_dir} \
