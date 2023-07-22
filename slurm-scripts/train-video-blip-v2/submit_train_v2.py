@@ -18,6 +18,7 @@ parser.add_argument("--train_batch_size", type=int, required=True)
 parser.add_argument("--gradient_accumulation_steps", type=int, required=True)
 parser.add_argument("--per_device_eval_batch_size", type=int, required=True)
 parser.add_argument("--num_videos_per_sample", type=int, required=True)
+parser.add_argument("--warmup_steps", type=int, default=1000)
 parser.add_argument("--email")
 parser.add_argument("--transformers_cache")
 parser.add_argument("--wandb_project", default="video-blip")
@@ -63,7 +64,7 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     --val_narrated_actions_dir {args.val_narrated_actions_dir} \
     --output_dir {output_dir} \
     --num_train_epochs 30 \
-    --warmup_steps 1000 \
+    --warmup_steps {args.warmup_steps} \
     --learning_rate 1e-5 \
     --per_device_train_batch_size {per_device_train_batch_size} \
     --gradient_accumulation_steps {args.gradient_accumulation_steps} \
