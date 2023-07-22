@@ -16,9 +16,22 @@ UNSURE_MIDDLE_REGEX = re.compile(r"#unsure", re.IGNORECASE)
 class DataCollatorForVideoSeq2Seq(DataCollatorForSeq2Seq):
     def __call__(self, features, return_tensors=None):
         if all("pixel_values" in feature for feature in features):
-            pixel_values = torch.stack(
-                [feature.pop("pixel_values") for feature in features]
-            )
+            max_num_vids = max(feature["pixel_values"].size(0) for feature in features)
+            pixel_values_list = []
+            for feature in features:
+                pixel_values = feature.pop("pixel_values")
+                num_videos_to_pad = max_num_vids - pixel_values.size(0)
+                pixel_values_list.append(
+                    F.pad(
+                        pixel_values,
+                        (0, 0, 0, 0, 0, 0, 0, 0, 0, num_videos_to_pad),
+                    )
+                )
+                feature["video_causal_mask"] = F.pad(
+                    feature["video_causal_mask"], (0, num_videos_to_pad)
+                )
+
+            pixel_values = torch.stack(pixel_values_list)
         else:
             # in some cases, we don't have pixel values, e.g.,
             # in-context learning evaluation
@@ -31,10 +44,10 @@ class DataCollatorForVideoSeq2Seq(DataCollatorForSeq2Seq):
 
 class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForVideoSeq2Seq):
     def __call__(self, features, return_tensors=None):
+        collated = super().__call__(features, return_tensors=return_tensors)
         video_causal_mask_list = [
             feature.pop("video_causal_mask") for feature in features
         ]
-        collated = super().__call__(features, return_tensors=return_tensors)
         # use the text token length calculated by super() as it handles
         # pad_to_multiple_of.
         max_text_token_len = collated["attention_mask"].size(1)

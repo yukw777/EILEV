@@ -6,6 +6,7 @@ from transformers import BatchEncoding, Blip2Processor
 
 from video_blip.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
+    DataCollatorForVideoSeq2Seq,
     clean_narration_text,
     generate_input_ids_and_labels,
     generate_input_ids_and_labels_from_interleaved,
@@ -388,6 +389,112 @@ def test_generate_input_ids_and_labels_from_interleaved(
     assert results["input_ids"].equal(expected["input_ids"])
     assert results["labels"].equal(expected["labels"])
     assert results["video_causal_mask"].equal(expected["video_causal_mask"])
+
+
+@pytest.mark.parametrize(
+    "datapoints,expected_pixel_values,expected_video_causal_mask",
+    [
+        (
+            [
+                {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                }
+            ],
+            torch.ones(1, 2, 1, 1, 1, 1).long(),
+            [torch.tensor([[1, 0], [1, 0], [0, 1]])],
+        ),
+        (
+            [
+                {
+                    "pixel_values": torch.ones(2, 1, 1, 1, 1),
+                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                },
+                {
+                    "pixel_values": torch.ones(3, 1, 1, 1, 1),
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0],
+                            [1, 0, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 1, 0],
+                            [0, 0, 1],
+                            [0, 0, 1],
+                        ]
+                    ),
+                },
+                {
+                    "pixel_values": torch.ones(4, 1, 1, 1, 1),
+                    "video_causal_mask": torch.tensor(
+                        [
+                            [1, 0, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 1],
+                        ]
+                    ),
+                },
+            ],
+            torch.stack(
+                [
+                    torch.concat(
+                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
+                    ),
+                    torch.concat(
+                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
+                    ),
+                    torch.ones(4, 1, 1, 1, 1),
+                ]
+            ),
+            [
+                torch.tensor([[1, 0, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0]]),
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 1, 0],
+                    ]
+                ),
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0],
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 1],
+                    ]
+                ),
+            ],
+        ),
+    ],
+)
+def test_data_collator_for_video_seq2seq(
+    datapoints, expected_pixel_values, expected_video_causal_mask
+):
+    def mock_call(features, return_tensors):
+        return {
+            "video_causal_mask": [feature["video_causal_mask"] for feature in features]
+        }
+
+    with patch(
+        "video_blip.data.utils.DataCollatorForSeq2Seq.__call__", side_effect=mock_call
+    ):
+        collator = DataCollatorForVideoSeq2Seq(Mock())
+        collated = collator(datapoints)
+        assert collated["pixel_values"].equal(expected_pixel_values)
+        assert len(collated["video_causal_mask"]) == len(expected_video_causal_mask)
+        for video_causal_mask, expected in zip(
+            collated["video_causal_mask"], expected_video_causal_mask
+        ):
+            assert video_causal_mask.equal(expected)
 
 
 @pytest.mark.parametrize(

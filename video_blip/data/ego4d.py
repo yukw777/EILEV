@@ -234,22 +234,13 @@ class Ego4dFHOMainFrameInterleavedDataset(Dataset[dict[str, Any]]):
 
         # generate chunks for each video and add to self.data
         self.data: list[list[int]] = []
-        num_dropped_chunks = 0
         for _, clips in video_clip_map.items():
             # first, sort by clip index
             clips.sort(key=lambda item: int(item[1]["clip_index"]))
 
             # then chunk it and add the dataset index to data
             for chunk in generate_chunks(clips, num_videos_per_sample):
-                # in order to simplify training, drop the chunk if it's shorter
-                # than num_videos_per_sample
-                if len(chunk) < num_videos_per_sample:
-                    num_dropped_chunks += 1
-                    continue
                 self.data.append([i for i, _ in chunk])
-        logging.warning(
-            f"Number of dropped chunks: {num_dropped_chunks} out of {len(self)}"
-        )
 
         self._transform = transform
 
