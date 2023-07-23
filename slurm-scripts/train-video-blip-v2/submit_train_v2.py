@@ -22,6 +22,7 @@ parser.add_argument("--warmup_steps", type=int, default=1000)
 parser.add_argument("--email")
 parser.add_argument("--transformers_cache")
 parser.add_argument("--wandb_project", default="video-blip")
+parser.add_argument("--resume_from_checkpoint", default=None)
 args = parser.parse_args()
 
 email = ""
@@ -30,6 +31,9 @@ if args.email is not None:
 transformers_cache = ""
 if args.transformers_cache is not None:
     transformers_cache = f"export TRANSFORMERS_CACHE={args.transformers_cache}"
+resume_from_checkpoint = ""
+if args.resume_from_checkpoint is not None:
+    resume_from_checkpoint = f"--resume_from_checkpoint {args.resume_from_checkpoint}"
 
 per_device_train_batch_size = (
     args.train_batch_size // args.gradient_accumulation_steps // args.num_gpus
@@ -80,6 +84,7 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     --save_total_limit 3 \
     --logging_steps 10 \
     --report_to wandb \
-    --run_name {args.run_name}
+    --run_name {args.run_name} \
+    {resume_from_checkpoint}
 """  # noqa: E501
 subprocess.run(["sbatch"], input=script, text=True)
