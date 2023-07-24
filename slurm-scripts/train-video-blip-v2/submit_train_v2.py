@@ -57,7 +57,7 @@ script = rf"""#!/bin/bash
 module load python/3.10.4 cuda
 {transformers_cache}
 export WANDB_PROJECT={args.wandb_project}
-RDZV_ID=12345
+RDZV_ID=$RANDOM
 MASTER_NODE=$(srun --nodes=1 --ntasks=1 hostname)
 srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes={args.num_gpus} --nproc_per_node=1 --rdzv-id=$RDZV_ID --rdzv-backend=c10d --rdzv-endpoint=$MASTER_NODE \
     ../../scripts/ego4d/train_v2.py \
