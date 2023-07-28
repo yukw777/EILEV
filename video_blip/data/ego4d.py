@@ -239,6 +239,7 @@ class Ego4dFHOMainFrameInterleavedDataset(Dataset[dict[str, Any]]):
     def __init__(
         self,
         narrated_actions_dir: str,
+        in_context_example_narrated_actions_dir: str | None = None,
         num_in_context_examples_per_sample: int = 4,
         verb_noun_ratio: float = 0.5,
         transform: Callable[[dict], Any] | None = None,
@@ -246,11 +247,20 @@ class Ego4dFHOMainFrameInterleavedDataset(Dataset[dict[str, Any]]):
         self.num_in_context_examples_per_sample = num_in_context_examples_per_sample
         self.verb_noun_ratio = verb_noun_ratio
         self._dataset = Ego4dFHOMainFrameDataset(narrated_actions_dir)
+        self.in_context_example_narrated_actions_dir = (
+            in_context_example_narrated_actions_dir
+        )
+        if in_context_example_narrated_actions_dir is None:
+            self._in_context_dataset = self._dataset
+        else:
+            self._in_context_dataset = Ego4dFHOMainFrameDataset(
+                in_context_example_narrated_actions_dir
+            )
 
         # put datapoints into buckets based on their structured verbs and nouns
         self.structured_verb_buckets: dict[str, set[int]] = defaultdict(set)
         self.structured_noun_buckets: dict[str, set[int]] = defaultdict(set)
-        for i, datapoint in enumerate(self._dataset.data):
+        for i, datapoint in enumerate(self._in_context_dataset.data):
             if datapoint["structured_verb"] not in {"", "[other]"}:
                 self.structured_verb_buckets[datapoint["structured_verb"]].add(i)
             if datapoint["structured_noun"] != "":
@@ -261,22 +271,20 @@ class Ego4dFHOMainFrameInterleavedDataset(Dataset[dict[str, Any]]):
     def __getitem__(self, index: int) -> dict[str, Any]:
         datapoint = self._dataset[index]
 
-        verb_bucket = {
-            i
-            for i in self.structured_verb_buckets.get(
-                datapoint["structured_verb"], set()
-            )
-            # make sure to filter out the current example
-            if i != index
-        }
-        noun_bucket = {
-            i
-            for i in self.structured_noun_buckets.get(
-                datapoint["structured_noun"], set()
-            )
-            # make sure to filter out the current example
-            if i != index
-        }
+        verb_bucket: set[int] = set()
+        for i in self.structured_verb_buckets.get(datapoint["structured_verb"], set()):
+            if self.in_context_example_narrated_actions_dir is None and i == index:
+                # filter out the current example if the in-context example
+                # dataset is the same as the main dataset
+                continue
+            verb_bucket.add(i)
+        noun_bucket: set[int] = set()
+        for i in self.structured_noun_buckets.get(datapoint["structured_noun"], set()):
+            if self.in_context_example_narrated_actions_dir is None and i == index:
+                # filter out the current example if the in-context example
+                # dataset is the same as the main dataset
+                continue
+            noun_bucket.add(i)
 
         def _sample(bucket: set[int], k: int) -> set[int]:
             if len(bucket) >= k:
@@ -312,14 +320,24 @@ class Ego4dFHOMainFrameInterleavedDataset(Dataset[dict[str, Any]]):
         if num_additional_examples > 0:
             # there wasn't enough samples in verb and noun buckets, so sample from the
             # rest of the dataset
-            examples |= _sample(
-                {i for i in range(len(self)) if i != index and i not in examples},
-                num_additional_examples,
-            )
+            rest: set[int] = set()
+            for i in range(len(self._in_context_dataset)):
+                if (
+                    self.in_context_example_narrated_actions_dir is None and i == index
+                ) or (i in examples):
+                    # filter out the current example if the in-context example
+                    # dataset is the same as the main dataset or
+                    # it's already been drawn.
+                    continue
+                rest.add(i)
+            examples |= _sample(rest, num_additional_examples)
 
         # shuffle the in-context examples and append the main datapoint in the end
         item = {
-            "items": [self._dataset[i] for i in random.sample(examples, len(examples))]
+            "items": [
+                self._in_context_dataset[i]
+                for i in random.sample(examples, len(examples))
+            ]
             + [datapoint]
         }
         if self._transform is not None:

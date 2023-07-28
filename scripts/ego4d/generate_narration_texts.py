@@ -161,6 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", choices=["fp32", "fp16", "bfloat16"], default="fp32")
     parser.add_argument("--num_dataloader_workers", default=0, type=int)
+    parser.add_argument("--train_narrated_actions_dir", required=True)
     parser.add_argument("--eval_narrated_actions_dir", required=True)
     parser.add_argument("--num_shot", required=True, type=int)
     parser.add_argument("--verb_noun_ratio", required=True, type=float)
@@ -194,6 +195,7 @@ if __name__ == "__main__":
     processor = Blip2Processor.from_pretrained(args.processor, padding_side="left")
     eval_dataset = Ego4dFHOMainFrameInterleavedDataset(
         args.eval_narrated_actions_dir,
+        in_context_example_narrated_actions_dir=args.train_narrated_actions_dir,
         num_in_context_examples_per_sample=args.num_shot,
         verb_noun_ratio=args.verb_noun_ratio,
         transform=Preprocessor(

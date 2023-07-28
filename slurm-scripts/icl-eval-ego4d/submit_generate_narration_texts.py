@@ -7,6 +7,7 @@ parser.add_argument("--partition", required=True)
 parser.add_argument("--model", required=True)
 parser.add_argument("--shot", type=int, required=True)
 parser.add_argument("--verb_noun_ratio", type=float, required=True)
+parser.add_argument("--train_narrated_actions_dir", required=True)
 parser.add_argument("--eval_narrated_actions_dir", required=True)
 parser.add_argument("--wandb_project", required=True)
 parser.add_argument("--job_name_prefix", required=True)
@@ -59,6 +60,7 @@ poetry run python ../../scripts/ego4d/generate_narration_texts.py \
   --model {args.model} \
   --device cuda \
   --num_dataloader_workers {args.num_dataloader_workers} \
+  --train_narrated_actions_dir {args.train_narrated_actions_dir} \
   --eval_narrated_actions_dir {args.eval_narrated_actions_dir} \
   --batch_size {args.batch_size} \
   --num_shot {args.shot} \
