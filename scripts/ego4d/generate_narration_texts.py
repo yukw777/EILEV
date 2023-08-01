@@ -5,6 +5,8 @@ from typing import Any
 
 import torch
 import wandb
+from accelerate import Accelerator
+from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import Blip2Processor
@@ -68,17 +70,23 @@ class Preprocessor:
 
 
 def eval(
-    eval_dataset: Ego4dFHOMainFrameInterleavedDataset,
-    num_dataloader_workers: int,
-    model: VideoBlipForConditionalGeneration,
+    accelerator: Accelerator,
+    eval_dataloader: DataLoader,
+    model: VideoBlipForConditionalGeneration | DistributedDataParallel,
     processor: Blip2Processor,
-    batch_size: int,
     use_video_causal_mask: bool,
     print_narration_texts: bool,
     log_narration_texts: bool,
     generation_config: dict,
     num_eval_datapoints: int | None,
 ) -> None:
+    if isinstance(model, DistributedDataParallel):
+        pass
+        dtype = model.module.dtype
+        module = model.module
+    else:
+        dtype = model.dtype
+    device = model.device
     if log_narration_texts:
         table = wandb.Table(
             columns=[
@@ -91,36 +99,29 @@ def eval(
         )
     else:
         table = None
-    for i, datapoint in enumerate(
-        tqdm(
-            DataLoader(
-                eval_dataset,
-                batch_size=batch_size,
-                num_workers=num_dataloader_workers,
-                collate_fn=DataCollator(processor.tokenizer),
-                pin_memory=True,
-            ),
-            desc="Generating",
-        )
-    ):
+    for i, datapoint in enumerate(tqdm(eval_dataloader, desc="Generating")):
         if num_eval_datapoints is not None and i == num_eval_datapoints:
             break
         generate_kwargs = {
-            "pixel_values": datapoint["pixel_values"].to(
-                dtype=model.dtype, device=model.device
-            ),
-            "input_ids": datapoint["input_ids"].to(device=model.device),
-            "attention_mask": datapoint["attention_mask"].to(device=model.device),
+            "pixel_values": datapoint["pixel_values"].to(dtype=dtype, device=device),
+            "input_ids": datapoint["input_ids"].to(device=device),
+            "attention_mask": datapoint["attention_mask"].to(device=device),
             **generation_config,
         }
         if use_video_causal_mask:
             generate_kwargs["video_causal_mask"] = datapoint["video_causal_mask"].to(
-                device=model.device
+                device=device
             )
-        generated_ids = model.generate(**generate_kwargs)
+        generated_ids = module.generate(**generate_kwargs)
+        generated_ids = accelerator.pad_across_processes(
+            generated_ids, dim=1, pad_index=processor.tokenizer.pad_token_id
+        )
+        all_generated_ids = accelerator.gather_for_metrics(generated_ids)
         generated_texts = [
             text.strip()
-            for text in processor.batch_decode(generated_ids, skip_special_tokens=True)
+            for text in processor.batch_decode(
+                all_generated_ids, skip_special_tokens=True
+            )
         ]
         ground_truth_texts = [text for text in datapoint["narration_text"]]
         if print_narration_texts:
@@ -151,14 +152,13 @@ def eval(
                     ground_truth_text,
                 )
     if table is not None:
-        wandb.log({"generated": table})
+        accelerator.log({"generated": table})
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
     parser.add_argument("--processor", default=None)
-    parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", choices=["fp32", "fp16", "bfloat16"], default="fp32")
     parser.add_argument("--num_dataloader_workers", default=0, type=int)
     parser.add_argument("--train_narrated_actions_dir", required=True)
@@ -172,11 +172,16 @@ if __name__ == "__main__":
     parser.add_argument("--num_eval_datapoints", default=None, type=int)
     parser.add_argument("--random_seed", type=int, default=42)
     parser.add_argument("--generation_config", default='{"max_new_tokens": 512}')
+    parser.add_argument("--wandb_project")
     args = parser.parse_args()
 
     torch.manual_seed(args.random_seed)
 
-    wandb.init(config=args)  # type: ignore
+    if args.wandb_project is not None:
+        accelerator = Accelerator(log_with="wandb")
+        accelerator.init_trackers(args.wandb_project, config=args)
+    else:
+        accelerator = Accelerator()
 
     # initialize model and processor
     dtype_dict = {
@@ -187,7 +192,7 @@ if __name__ == "__main__":
     dtype = dtype_dict[args.dtype]
     model = VideoBlipForConditionalGeneration.from_pretrained(
         args.model, torch_dtype=dtype, low_cpu_mem_usage=True
-    ).to(args.device)
+    )
     if args.processor is None:
         args.processor = args.model
 
@@ -202,19 +207,29 @@ if __name__ == "__main__":
             processor, "Question: What is the camera wearer doing? Answer:"
         ),
     )
+    model, eval_dataloader = accelerator.prepare(
+        model,
+        DataLoader(
+            eval_dataset,
+            batch_size=args.batch_size,
+            num_workers=args.num_dataloader_workers,
+            collate_fn=DataCollator(processor.tokenizer),
+            pin_memory=True,
+        ),
+    )
 
     generation_config = json.loads(args.generation_config)
     if "max_new_tokens" not in generation_config:
         generation_config["max_new_tokens"] = 512
     eval(
-        eval_dataset,
-        args.num_dataloader_workers,
+        accelerator,
+        eval_dataloader,
         model,
         processor,
-        args.batch_size,
         not args.no_video_causal_mask,
         args.print_narration_texts,
         args.log_narration_texts,
         generation_config,
         args.num_eval_datapoints,
     )
+    accelerator.end_training()
