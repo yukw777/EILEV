@@ -118,16 +118,28 @@ def eval(
             generated_ids, dim=1, pad_index=processor.tokenizer.pad_token_id
         )
         all_generated_ids = accelerator.gather_for_metrics(generated_ids)
-        frame_paths = gather_object(datapoint["frame_path"])
-        video_uids = gather_object(datapoint["video_uid"])
-        clip_indices = gather_object(datapoint["clip_index"])
-        ground_truth_texts = gather_object(datapoint["narration_text"])
         generated_texts = [
             text.strip()
             for text in processor.batch_decode(
                 all_generated_ids, skip_special_tokens=True
             )
         ]
+        frame_paths = gather_object(datapoint["frame_path"])
+        video_uids = gather_object(datapoint["video_uid"])
+        clip_indices = gather_object(datapoint["clip_index"])
+        ground_truth_texts = gather_object(datapoint["narration_text"])
+        if (
+            accelerator.gradient_state.end_of_dataloader
+            and accelerator.gradient_state.remainder > 0
+        ):
+            # we have some duplicates, so filter them out
+            # this logic is from gather_for_metrics()
+            frame_paths = frame_paths[: accelerator.gradient_state.remainder]
+            video_uids = video_uids[: accelerator.gradient_state.remainder]
+            clip_indices = clip_indices[: accelerator.gradient_state.remainder]
+            ground_truth_texts = ground_truth_texts[
+                : accelerator.gradient_state.remainder
+            ]
         if print_narration_texts:
             for generated_text, ground_truth_text in zip(
                 generated_texts, ground_truth_texts
