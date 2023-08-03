@@ -247,4 +247,5 @@ if __name__ == "__main__":
         generation_config,
         args.num_eval_datapoints,
     )
-    accelerator.end_training()
+    if args.wandb_project is not None:
+        accelerator.end_training()
