@@ -63,7 +63,6 @@ srun --cpus-per-task {args.num_dataloader_workers} poetry run torchrun --nnodes=
   --batch_size {args.batch_size} \
   --num_shot {args.num_shot} \
   --verb_noun_ratio {args.verb_noun_ratio} \
-  --log_narration_texts \
   {no_video_causal_mask} \
   {gen_config} \
   --wandb_project {args.wandb_project}

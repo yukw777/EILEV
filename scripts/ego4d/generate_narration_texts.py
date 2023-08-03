@@ -172,7 +172,6 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=1, type=int)
     parser.add_argument("--no_video_causal_mask", action="store_true")
     parser.add_argument("--print_narration_texts", action="store_true")
-    parser.add_argument("--log_narration_texts", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=None, type=int)
     parser.add_argument("--random_seed", type=int, default=42)
     parser.add_argument("--generation_config", default='{"max_new_tokens": 512}')
@@ -232,7 +231,7 @@ if __name__ == "__main__":
         processor,
         not args.no_video_causal_mask,
         args.print_narration_texts,
-        args.log_narration_texts,
+        args.wandb_project is not None,
         generation_config,
         args.num_eval_datapoints,
     )
