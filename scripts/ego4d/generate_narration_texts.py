@@ -6,6 +6,7 @@ from typing import Any
 import torch
 import wandb
 from accelerate import Accelerator
+from accelerate.utils import gather_object
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -117,13 +118,15 @@ def eval(
             generated_ids, dim=1, pad_index=processor.tokenizer.pad_token_id
         )
         all_generated_ids = accelerator.gather_for_metrics(generated_ids)
+        ground_truth_texts = gather_object(
+            [text for text in datapoint["narration_text"]]
+        )
         generated_texts = [
             text.strip()
             for text in processor.batch_decode(
                 all_generated_ids, skip_special_tokens=True
             )
         ]
-        ground_truth_texts = [text for text in datapoint["narration_text"]]
         if print_narration_texts:
             for generated_text, ground_truth_text in zip(
                 generated_texts, ground_truth_texts
