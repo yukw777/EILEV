@@ -52,7 +52,7 @@ def calc_rouge(preds: list[str], target: list[str]) -> dict[str, float]:
 
 def calc_bleu(preds: list[str], target: list[str]) -> float:
     bleu = BLEUScore()
-    return bleu(preds, target).item()
+    return bleu(preds, [[t] for t in target]).item()
 
 
 def calc_bertscore(
