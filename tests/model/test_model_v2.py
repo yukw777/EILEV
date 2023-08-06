@@ -1346,9 +1346,9 @@ def test_v2_video_blip_for_cond_gen(
         {"num_beams": 2, "num_beam_groups": 2},  # diverse beam-search decoding
     ],
 )
-@pytest.mark.parametrize("seq_len", [1, 16])
+@pytest.mark.parametrize("seq_len", [16, 32])
 @pytest.mark.parametrize("time", [1, 8])
-@pytest.mark.parametrize("num_videos", [1, 5])
+@pytest.mark.parametrize("num_videos", [None, 1, 3])
 @pytest.mark.parametrize("batch", [1, 4])
 @pytest.mark.parametrize(
     "config",
@@ -1378,6 +1378,33 @@ def test_v2_video_blip_for_cond_gen(
             },
             num_query_tokens=4,
         ),
+        Blip2Config(
+            vision_config={
+                "hidden_size": 8,
+                "intermediate_size": 16,
+                "projection_dim": 4,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 4,
+                "patch_size": 8,
+            },
+            qformer_config={
+                "hidden_size": 8,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 2,
+                "intermediate_size": 16,
+                "encoder_hidden_size": 8,
+            },
+            text_config={
+                "model_type": "t5",
+                "d_model": 8,
+                "d_kv": 4,
+                "d_ff": 16,
+                "num_layers": 2,
+                "num_heads": 2,
+                "decoder_start_token_id": 0,
+            },
+            num_query_tokens=4,
+        ),
     ],
 )
 def test_v2_video_blip_for_cond_gen_generate(
@@ -1386,7 +1413,9 @@ def test_v2_video_blip_for_cond_gen_generate(
     model = VideoBlipForConditionalGeneration(config)
     max_length = 5
     generated_ids = model.generate(
-        torch.rand(
+        input_ids=torch.ones(batch, seq_len).long(),
+        attention_mask=torch.ones(batch, seq_len).long(),
+        pixel_values=torch.rand(
             # channel is pretty much always 3
             batch,
             num_videos,
@@ -1394,10 +1423,17 @@ def test_v2_video_blip_for_cond_gen_generate(
             time,
             config.vision_config.image_size,
             config.vision_config.image_size,
-        ),
-        input_ids=torch.ones(batch, seq_len).long(),
-        attention_mask=torch.ones(batch, seq_len).long(),
-        video_causal_mask=torch.ones(batch, seq_len, num_videos).long(),
+        )
+        if num_videos is not None
+        else None,
+        video_input_mask=torch.tensor(
+            [1] * num_videos * config.num_query_tokens
+            + [0] * (seq_len - num_videos * config.num_query_tokens)
+        )
+        .unsqueeze(0)
+        .expand(batch, -1)
+        if num_videos is not None
+        else None,
         max_length=max_length,
         **generate_kwargs
     )

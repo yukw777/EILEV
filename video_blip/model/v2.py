@@ -682,10 +682,10 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
     @torch.no_grad()
     def generate(
         self,
-        pixel_values: torch.Tensor,
         input_ids: torch.Tensor | None = None,
+        pixel_values: torch.Tensor | None = None,
+        video_input_mask: torch.Tensor | None = None,
         attention_mask: torch.Tensor | None = None,
-        video_causal_mask: torch.Tensor | None = None,
         **generate_kwargs,
     ) -> torch.Tensor:
         """Mostly copied from Blip2ForConditionalGeneration.generate()
@@ -693,48 +693,51 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         Look at the official doc for Blip2ForConditionalGeneration for more details on
         undocumented parameters.
 
-        :param video_causal_mask: a tensor of shape (batch, seq_len, num_videos)
+        :param video_input_mask: a tensor of shape (batch, seq_len)
         """
+        if pixel_values is not None:
+            # if pixel_values is given, we need video_input_mask
+            assert video_input_mask is not None
+            video_input_mask = video_input_mask.bool()
         if hasattr(self, "hf_device_map"):
             # preprocess for `accelerate`
             self._preprocess_accelerate()
 
-        # step 1: forward the images through the vision encoder,
-        # to get image embeddings of shape
-        # (batch_size, num_videos, time * vision_seq_len, vision_hidden_size)
-        image_embeds = self.vision_model(
-            pixel_values, return_dict=True
-        ).last_hidden_state
+        video_features: torch.Tensor | None = None
+        if pixel_values is not None:
+            # step 1: forward the images through the vision encoder,
+            # to get image embeddings of shape
+            # (batch_size, num_videos, time * vision_seq_len, vision_hidden_size)
+            image_embeds = self.vision_model(
+                pixel_values, return_dict=True
+            ).last_hidden_state
 
-        # step 2: forward the query tokens through the QFormer,
-        # using the image embeddings for cross-attention
-        # (batch_size * num_videos, time * vision_seq_len, vision_hidden_size)
-        image_embeds = image_embeds.flatten(end_dim=1)
-        image_attention_mask = torch.ones(
-            image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
-        )
+            # step 2: forward the query tokens through the QFormer,
+            # using the image embeddings for cross-attention
+            # (batch_size * num_videos, time * vision_seq_len, vision_hidden_size)
+            image_embeds = image_embeds.flatten(end_dim=1)
+            image_attention_mask = torch.ones(
+                image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
+            )
 
-        query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
-        query_outputs = self.qformer(
-            query_embeds=query_tokens,
-            encoder_hidden_states=image_embeds,
-            encoder_attention_mask=image_attention_mask,
-            return_dict=True,
-        )
-        # (batch_size * num_videos, num_query_tokens, qformer_hidden_size)
-        query_output = query_outputs.last_hidden_state
+            query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
+            query_outputs = self.qformer(
+                query_embeds=query_tokens,
+                encoder_hidden_states=image_embeds,
+                encoder_attention_mask=image_attention_mask,
+                return_dict=True,
+            )
+            # (batch_size * num_videos, num_query_tokens, qformer_hidden_size)
+            query_output = query_outputs.last_hidden_state
 
-        # step 3: use the language model, conditioned on the query outputs and
-        # the prompt
-        batch_size, num_videos, _, _, _, _ = pixel_values.size()
-        language_model_inputs = self.language_projection(
-            query_output.view(batch_size, num_videos * self.config.num_query_tokens, -1)
-        )
-        language_attention_mask = torch.ones(
-            language_model_inputs.size()[:-1],
-            dtype=torch.long,
-            device=language_model_inputs.device,
-        )
+            # step 3: project the qformer tokens to the language model space
+            batch_size, num_videos, _, _, _, _ = pixel_values.size()
+            # (batch_size * num_videos * num_query_tokens, text_hidden_size)
+            video_features = self.language_projection(
+                query_output.view(
+                    batch_size * num_videos * self.config.num_query_tokens, -1
+                )
+            )
         if input_ids is None:
             input_ids = (
                 torch.LongTensor([[self.config.text_config.bos_token_id]])
@@ -743,32 +746,14 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
             )
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)  # type: ignore
-        attention_mask = torch.cat(
-            [
-                language_attention_mask,
-                attention_mask.to(language_attention_mask.device),  # type: ignore
-            ],
-            dim=1,
-        )
-        if video_causal_mask is None:
-            video_causal_mask = torch.ones(
-                batch_size, input_ids.size(1), num_videos  # type: ignore
-            )
-        video_causal_mask = video_causal_mask.to(  # type: ignore
-            language_model_inputs.device
-        ).repeat_interleave(self.config.num_query_tokens, dim=2)
 
-        # concatenate query embeddings with prompt embeddings
         inputs_embeds = self.get_input_embeddings()(input_ids)
-        inputs_embeds = torch.cat(
-            [language_model_inputs, inputs_embeds.to(language_model_inputs.device)],
-            dim=1,
-        )
+        if video_features is not None:
+            inputs_embeds[video_input_mask] = video_features
 
         outputs = self.language_model.generate(
             inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
-            video_causal_mask=video_causal_mask,
             **generate_kwargs,
         )
 
