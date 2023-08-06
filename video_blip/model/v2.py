@@ -762,94 +762,80 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
     @torch.no_grad()
     def classify(
         self,
-        pixel_values: torch.Tensor,
         prompt_input_ids: torch.Tensor,
         class_input_ids: torch.Tensor,
         prompt_attention_mask: torch.Tensor | None = None,
-        prompt_video_causal_mask: torch.Tensor | None = None,
+        pixel_values: torch.Tensor | None = None,
+        prompt_video_input_mask: torch.Tensor | None = None,
         class_attention_mask: torch.Tensor | None = None,
         class_batch_size: int | None = None,
     ) -> torch.Tensor:
         """
 
-        :param pixel_values: tensor of shape
-            (batch, num_videos, channel, time, height, width)
         :param prompt_input_ids: tensor of shape (batch, prompt_seq_len),
             padding should be left-sided.
         :param class_input_ids: tensor of shape (num_classes, class_seq_len)
         :param prompt_attention_mask: tensor of shape (batch, prompt_seq_len)
-        :param prompt_video_causal_mask: tensor of shape
-            (batch, prompt_seq_len, num_videos)
+        :param pixel_values: tensor of shape
+            (batch, num_videos, channel, time, height, width)
+        :param prompt_video_input_mask: tensor of shape (batch, prompt_seq_len)
         :param class_attention_mask: tensor of shape (num_classes, class_seq_len)
         :param class_batch_size: batch size for processing classes
         :return: log likelihoods for the classes
         """
+        # only support decoder only language models for now
+        assert self.config.use_decoder_only_language_model
 
-        # step 1: forward the images through the vision encoder
-        # to get image embeddings of shape
-        # (batch, num_videos, time * vision_seq_len, vision_hidden_size)
-        image_embeds = self.vision_model(
-            pixel_values, return_dict=True
-        ).last_hidden_state
+        if pixel_values is not None:
+            # if pixel_values is given, we need video_input_mask
+            assert prompt_video_input_mask is not None
+            prompt_video_input_mask = prompt_video_input_mask.bool()
 
-        # step 2: forward the query tokens through the QFormer,
-        # using the image embeddings for cross-attention
-        # (batch * num_videos, time * vision_seq_len, vision_hidden_size)
-        image_embeds = image_embeds.flatten(end_dim=1)
-        image_attention_mask = torch.ones(
-            image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
-        )
+        batch = prompt_input_ids.size(0)
+        prompt_video_features: torch.Tensor | None = None
+        if pixel_values is not None:
+            # step 1: forward the images through the vision encoder
+            # to get image embeddings of shape
+            # (batch, num_videos, time * vision_seq_len, vision_hidden_size)
+            image_embeds = self.vision_model(
+                pixel_values, return_dict=True
+            ).last_hidden_state
 
-        query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
-        query_outputs = self.qformer(
-            query_embeds=query_tokens,
-            encoder_hidden_states=image_embeds,
-            encoder_attention_mask=image_attention_mask,
-            return_dict=True,
-        )
-        # (batch * num_videos, num_query_tokens, qformer_hidden_size)
-        query_output = query_outputs.last_hidden_state
+            # step 2: forward the query tokens through the QFormer,
+            # using the image embeddings for cross-attention
+            # (batch * num_videos, time * vision_seq_len, vision_hidden_size)
+            image_embeds = image_embeds.flatten(end_dim=1)
+            image_attention_mask = torch.ones(
+                image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
+            )
 
-        # step 3: process the qformer tokens and prompt(s) with the language model
-        batch, num_videos, _, _, _, _ = pixel_values.size()
-        # (batch, num_videos * num_query_tokens, hidden)
-        qformer_input_embeds = self.language_projection(
-            query_output.view(batch, num_videos * self.config.num_query_tokens, -1)
-        )
+            query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
+            query_outputs = self.qformer(
+                query_embeds=query_tokens,
+                encoder_hidden_states=image_embeds,
+                encoder_attention_mask=image_attention_mask,
+                return_dict=True,
+            )
+            # (batch * num_videos, num_query_tokens, qformer_hidden_size)
+            query_output = query_outputs.last_hidden_state
+
+            # step 3: project the qformer tokens to the language model space
+            num_videos = pixel_values.size(1)
+            # (batch * num_videos * num_query_tokens, hidden)
+            prompt_video_features = self.language_projection(
+                query_output.view(batch * num_videos * self.config.num_query_tokens, -1)
+            )
         # (batch, prompt_seq_len, hidden)
         prompt_input_embeds = self.language_model.get_input_embeddings()(
             prompt_input_ids.to(self.language_model.device)
         )
-        # (batch, num_videos * num_query_tokens + prompt_seq_len, hidden)
-        prompt_input_embeds = torch.cat(
-            [qformer_input_embeds, prompt_input_embeds], dim=1
-        )
+        if prompt_video_features is not None:
+            prompt_input_embeds[prompt_video_input_mask] = prompt_video_features
         if prompt_attention_mask is None:
             prompt_attention_mask = torch.ones_like(prompt_input_ids)
-        # (batch, num_videos * num_query_tokens + prompt_seq_len)
-        prompt_attention_mask = torch.cat(
-            [
-                torch.ones(
-                    qformer_input_embeds.size()[:-1],
-                    dtype=torch.long,
-                    device=self.language_model.device,
-                ),
-                prompt_attention_mask,
-            ],
-            dim=1,
-        )
-        if prompt_video_causal_mask is None:
-            prompt_video_causal_mask = torch.ones(
-                batch, prompt_input_ids.size(1), num_videos
-            )
-        # (batch, prompt_seq_len, num_videos * num_query_tokens)
-        prompt_video_causal_mask = prompt_video_causal_mask.to(
-            self.language_model.device
-        ).repeat_interleave(self.config.num_query_tokens, dim=2)
         prompt_outputs = self.language_model(
             inputs_embeds=prompt_input_embeds,
             attention_mask=prompt_attention_mask,
-            video_causal_mask=prompt_video_causal_mask,
             return_dict=True,
             use_cache=True,
         )
@@ -867,7 +853,6 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
                 prompt_outputs.logits,
                 prompt_outputs.past_key_values,
                 prompt_attention_mask,
-                prompt_video_causal_mask,
                 class_attention_mask=None
                 if class_attention_mask is None
                 else class_attention_mask[i : i + class_batch_size],
@@ -882,10 +867,9 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         prompt_logits: torch.Tensor,
         prompt_past_key_values: tuple[tuple[torch.Tensor]],
         prompt_attention_mask: torch.Tensor,
-        prompt_video_causal_mask: torch.Tensor,
         class_attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        num_classes, class_seq_len = class_input_ids.size()
+        num_classes, _ = class_input_ids.size()
         # (batch * num_classes, class_seq_len)
         batch_class_input_ids = (
             class_input_ids.unsqueeze(0)
@@ -894,11 +878,10 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         )
         if class_attention_mask is None:
             class_attention_mask = torch.ones_like(class_input_ids)
-        # (batch * num_classes,
-        #  num_videos * num_query_tokens + prompt_seq_len + class_seq_len)
+        # (batch * num_classes, prompt_seq_len + class_seq_len)
         batch_class_attention_mask = torch.cat(
             [
-                # (batch * num_classes, num_videos * num_query_tokens + prompt_seq_len)
+                # (batch * num_classes, prompt_seq_len)
                 prompt_attention_mask.repeat_interleave(num_classes, dim=0),
                 # (batch * num_classes, class_seq_len)
                 class_attention_mask.unsqueeze(0)
@@ -907,30 +890,14 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
             ],
             dim=1,
         )
-        # (batch * num_classes, num_heads,
-        #  num_videos * num_query_tokens + prompt_seq_len, hidden_per_head)
+        # (batch * num_classes, num_heads, prompt_seq_len, hidden_per_head)
         batch_past_key_values = tuple(
             tuple(kv.repeat_interleave(num_classes, dim=0) for kv in layer_kv)
             for layer_kv in prompt_past_key_values
         )
-        # repeat the video causal mask for the last text token class_seq_len times
-        # (batch, class_seq_len, num_videos * num_query_tokens)
-        last_video_causal_mask = prompt_video_causal_mask[:, -1:, :].expand(
-            -1, class_seq_len, -1
-        )
-        # (batch, prompt_seq_len + class_seq_len, num_videos * num_query_tokens)
-        video_causal_mask = torch.cat(
-            [prompt_video_causal_mask, last_video_causal_mask], dim=1
-        )
-        # (batch * num_classes,
-        #  prompt_seq_len + class_seq_len, num_videos * num_query_tokens)
-        batch_video_causal_mask = video_causal_mask.repeat_interleave(
-            num_classes, dim=0
-        )
         outputs = self.language_model(
             input_ids=batch_class_input_ids,
             attention_mask=batch_class_attention_mask,
-            video_causal_mask=batch_video_causal_mask,
             past_key_values=batch_past_key_values,
             return_dict=True,
         )
