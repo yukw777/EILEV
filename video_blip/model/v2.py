@@ -4,6 +4,8 @@ from typing import Any
 import torch
 import torch.nn as nn
 from transformers import (
+    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
     Blip2Config,
     Blip2ForConditionalGeneration,
     Blip2QFormerModel,
@@ -16,6 +18,7 @@ from transformers import (
 from transformers.modeling_outputs import (
     BaseModelOutputWithPast,
     BaseModelOutputWithPooling,
+    BaseModelOutputWithPoolingAndCrossAttentions,
     CausalLMOutputWithPast,
 )
 from transformers.models.blip_2.modeling_blip_2 import (
@@ -534,9 +537,6 @@ class VideoBlipVisionModel(Blip2VisionModel):
 
 class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
     def __init__(self, config: Blip2Config) -> None:
-        # This version is trained only on autoregressive language modeling,
-        # so only decoder only LMs are supported
-        assert config.use_decoder_only_language_model
         # HACK: we call the grandparent super().__init__() to bypass
         # Blip2ForConditionalGeneration.__init__() so we can replace
         # self.vision_model
@@ -552,8 +552,10 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         self.language_projection = nn.Linear(
             config.qformer_config.hidden_size, config.text_config.hidden_size
         )
-        config.text_config.qformer_num_query_tokens = config.num_query_tokens
-        language_model = VideoOPTForCausalLM(config.text_config)
+        if config.use_decoder_only_language_model:
+            language_model = AutoModelForCausalLM.from_config(config.text_config)
+        else:
+            language_model = AutoModelForSeq2SeqLM.from_config(config.text_config)
         self.language_model = language_model
 
         # Initialize weights and apply final processing
@@ -561,15 +563,15 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
 
     def forward(
         self,
-        pixel_values: torch.FloatTensor,
-        input_ids: torch.LongTensor,
-        attention_mask: torch.LongTensor | None = None,
-        video_causal_mask: torch.LongTensor | None = None,
-        decoder_input_ids: torch.LongTensor | None = None,
-        decoder_attention_mask: torch.LongTensor | None = None,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        pixel_values: torch.Tensor | None = None,
+        video_input_mask: torch.Tensor | None = None,
+        decoder_input_ids: torch.Tensor | None = None,
+        decoder_attention_mask: torch.Tensor | None = None,
         output_attentions: bool | None = None,
         output_hidden_states: bool | None = None,
-        labels: torch.LongTensor | None = None,
+        labels: torch.Tensor | None = None,
         return_dict: bool | None = None,
     ) -> tuple | Blip2ForConditionalGenerationModelOutput:
         """Mostly copied from Blip2ForConditionalGeneration.forward()
@@ -579,104 +581,91 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
 
         :param pixel_values: a tensor of shape
             (batch, num_videos, channel, time, height, width)
-        :param video_causal_mask: a tensor of shape (batch, seq_len, num_videos)
+        :param video_input_mask: a tensor of shape (batch, seq_len)
         """
+        if pixel_values is not None:
+            # if pixel_values is given, we need video_input_mask
+            assert video_input_mask is not None
+            video_input_mask = video_input_mask.bool()
+
         return_dict = (
             return_dict if return_dict is not None else self.config.use_return_dict
         )
 
-        # step 1: forward the images through the vision encoder,
-        # to get image embeddings of shape
-        # (batch_size, num_videos, time * vision_seq_len, vision_hidden_size)
-        vision_outputs = self.vision_model(
-            pixel_values=pixel_values,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-        image_embeds = vision_outputs[0]
+        vision_outputs: BaseModelOutputWithPooling | None = None
+        video_features: torch.Tensor | None = None
+        query_outputs: BaseModelOutputWithPoolingAndCrossAttentions | None = None
+        if pixel_values is not None:
+            # step 1: forward the images through the vision encoder
+            # to get image embeddings of shape
+            # (batch_size, num_videos, time * vision_seq_len, vision_hidden_size)
+            vision_outputs = self.vision_model(
+                pixel_values=pixel_values,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+            )
+            assert vision_outputs is not None
+            image_embeds = vision_outputs[0]
 
-        # step 2: forward the query tokens through the QFormer,
-        # using the image embeddings for cross-attention
-        # (batch_size * num_videos, time * vision_seq_len, vision_hidden_size)
-        image_embeds = image_embeds.flatten(end_dim=1)
-        image_attention_mask = torch.ones(
-            image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
-        )
+            # step 2: forward the query tokens through the QFormer,
+            # using the image embeddings for cross-attention
+            # (batch_size * num_videos, time * vision_seq_len, vision_hidden_size)
+            image_embeds = image_embeds.flatten(end_dim=1)
+            image_attention_mask = torch.ones(
+                image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
+            )
 
-        query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
-        query_outputs = self.qformer(
-            query_embeds=query_tokens,
-            encoder_hidden_states=image_embeds,
-            encoder_attention_mask=image_attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-        # (batch_size * num_videos, num_query_tokens, qformer_hidden_size)
-        query_output = query_outputs[0]
+            query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
+            query_outputs = self.qformer(
+                query_embeds=query_tokens,
+                encoder_hidden_states=image_embeds,
+                encoder_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+            )
+            # (batch_size * num_videos, num_query_tokens, qformer_hidden_size)
+            query_output = query_outputs[0]
 
-        # step 3: use the language model, conditioned on the query outputs and
-        # the prompt
-        batch_size, num_videos, _, _, _, _ = pixel_values.size()
-        language_model_inputs = self.language_projection(
-            query_output.view(batch_size, num_videos * self.config.num_query_tokens, -1)
-        )
-        language_model_attention_mask = torch.ones(
-            language_model_inputs.size()[:-1],
-            device=language_model_inputs.device,
-            dtype=torch.long,
-        )
+            # step 3: project the qformer tokens to the language model space
+            batch_size, num_videos, _, _, _, _ = pixel_values.size()
+            # (batch_size * num_videos * num_query_tokens, text_hidden_size)
+            video_features = self.language_projection(
+                query_output.view(
+                    batch_size * num_videos * self.config.num_query_tokens, -1
+                )
+            )
+        # (batch_size, seq_len, text_hidden_size)
         inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
-        # (batch_size, num_videos * num_query_tokens + num_tokens, qformer_hidden_size)
-        inputs_embeds = torch.cat(
-            [language_model_inputs, inputs_embeds.to(language_model_inputs.device)],
-            dim=1,
-        )
+        if video_features is not None:
+            inputs_embeds[video_input_mask] = video_features
 
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)  # type: ignore
-        attention_mask = torch.cat(
-            [
-                language_model_attention_mask,
-                attention_mask.to(language_model_inputs.device),  # type: ignore
-            ],
-            dim=1,
-        )
-        if video_causal_mask is None:
-            video_causal_mask = torch.ones(
-                batch_size, input_ids.size(1), num_videos, dtype=torch.long
-            )  # type: ignore
-        video_causal_mask = video_causal_mask.to(  # type: ignore
-            language_model_inputs.device
-        ).repeat_interleave(self.config.num_query_tokens, dim=2)
 
-        outputs = self.language_model(
-            inputs_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            video_causal_mask=video_causal_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-        logits = outputs.logits if return_dict else outputs[0]
-        loss = None
-        # we compute the loss here since we need to take into account
-        # the sequence length of the query embeds
-        if labels is not None:
-            labels = labels.to(logits.device)  # type: ignore
-            logits = logits[:, -labels.size(1) :, :]
-            # Shift so that tokens < n predict n
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous().to(logits.device)
-
-            # Flatten the tokens
-            loss_fct = nn.CrossEntropyLoss(reduction="mean")
-
-            loss = loss_fct(
-                shift_logits.view(-1, self.config.text_config.vocab_size),
-                shift_labels.view(-1),
+        if self.config.use_decoder_only_language_model:
+            outputs = self.language_model(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+                labels=labels,
             )
+        else:
+            outputs = self.language_model(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                decoder_input_ids=decoder_input_ids,
+                decoder_attention_mask=decoder_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+                labels=labels,
+            )
+        loss = outputs.loss if return_dict else outputs[0]
+        logits = outputs.logits if return_dict else outputs[1]
 
         if not return_dict:
             output = (logits, vision_outputs, query_outputs, outputs)

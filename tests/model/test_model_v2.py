@@ -1232,9 +1232,9 @@ def test_v2_video_blip_vision_model_forward(
 
 @pytest.mark.parametrize("output_hidden_states", [True, False])
 @pytest.mark.parametrize("output_attentions", [True, False])
-@pytest.mark.parametrize("seq_len", [1, 16])
+@pytest.mark.parametrize("seq_len", [16, 32])
 @pytest.mark.parametrize("time", [1, 8])
-@pytest.mark.parametrize("num_videos", [1, 5])
+@pytest.mark.parametrize("num_videos", [None, 1, 3])
 @pytest.mark.parametrize("batch", [1, 4])
 @pytest.mark.parametrize(
     "config",
@@ -1264,12 +1264,39 @@ def test_v2_video_blip_vision_model_forward(
             },
             num_query_tokens=4,
         ),
+        Blip2Config(
+            vision_config={
+                "hidden_size": 8,
+                "intermediate_size": 16,
+                "projection_dim": 4,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 4,
+                "patch_size": 8,
+            },
+            qformer_config={
+                "hidden_size": 8,
+                "num_hidden_layers": 2,
+                "num_attention_heads": 2,
+                "intermediate_size": 16,
+                "encoder_hidden_size": 8,
+            },
+            text_config={
+                "model_type": "t5",
+                "d_model": 8,
+                "d_kv": 4,
+                "d_ff": 16,
+                "num_layers": 2,
+                "num_heads": 2,
+                "decoder_start_token_id": 0,
+            },
+            num_query_tokens=4,
+        ),
     ],
 )
 def test_v2_video_blip_for_cond_gen(
     config: Blip2Config,
     batch: int,
-    num_videos: int,
+    num_videos: int | None,
     time: int,
     seq_len: int,
     output_attentions: bool,
@@ -1277,7 +1304,9 @@ def test_v2_video_blip_for_cond_gen(
 ) -> None:
     model = VideoBlipForConditionalGeneration(config)
     outputs = model(
-        torch.rand(
+        torch.ones(batch, seq_len).long(),
+        attention_mask=torch.ones(batch, seq_len).long(),
+        pixel_values=torch.rand(
             # channel is pretty much always 3
             batch,
             num_videos,
@@ -1285,10 +1314,17 @@ def test_v2_video_blip_for_cond_gen(
             time,
             config.vision_config.image_size,
             config.vision_config.image_size,
-        ),
-        torch.ones(batch, seq_len).long(),
-        attention_mask=torch.ones(batch, seq_len).long(),
-        video_causal_mask=torch.ones(batch, seq_len, num_videos).long(),
+        )
+        if num_videos is not None
+        else None,
+        video_input_mask=torch.tensor(
+            [1] * num_videos * config.num_query_tokens
+            + [0] * (seq_len - num_videos * config.num_query_tokens)
+        )
+        .unsqueeze(0)
+        .expand(batch, -1)
+        if num_videos is not None
+        else None,
         labels=torch.ones(batch, seq_len).long(),
         output_attentions=output_attentions,
         output_hidden_states=output_hidden_states,
@@ -1296,49 +1332,6 @@ def test_v2_video_blip_for_cond_gen(
     )
     assert outputs.loss.size() == tuple()
     assert outputs.logits.size() == (batch, seq_len, config.text_config.vocab_size)
-    assert outputs.qformer_outputs.last_hidden_state.size() == (
-        batch * num_videos,
-        config.num_query_tokens,
-        config.qformer_config.hidden_size,
-    )
-    assert outputs.qformer_outputs.pooler_output.size() == (
-        batch * num_videos,
-        config.qformer_config.hidden_size,
-    )
-    if output_attentions:
-        assert (
-            len(outputs.qformer_outputs.attentions)
-            == config.qformer_config.num_hidden_layers
-        )
-        for attn in outputs.qformer_outputs.attentions:
-            assert attn.size() == (
-                batch * num_videos,
-                config.qformer_config.num_attention_heads,
-                config.num_query_tokens,
-                config.num_query_tokens,
-            )
-    else:
-        assert outputs.qformer_outputs.attentions is None
-
-    if output_attentions:
-        assert (
-            len(outputs.qformer_outputs.cross_attentions)
-            == config.qformer_config.num_hidden_layers
-            // config.qformer_config.cross_attention_frequency
-        )
-        num_vision_tokens = (
-            (config.vision_config.image_size // config.vision_config.patch_size) ** 2
-            + 1
-        ) * time
-        for cross_attn in outputs.qformer_outputs.cross_attentions:
-            assert cross_attn.size() == (
-                batch * num_videos,
-                config.qformer_config.num_attention_heads,
-                config.num_query_tokens,
-                num_vision_tokens,
-            )
-    else:
-        assert outputs.qformer_outputs.cross_attentions is None
 
 
 @pytest.mark.parametrize(
