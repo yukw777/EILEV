@@ -96,72 +96,142 @@ def test_generate_input_ids_and_labels(
 
 
 @pytest.fixture
-def processor():
+def decoder_only_processor():
     return Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b")
 
 
+@pytest.fixture
+def seq2seq_processor():
+    return Blip2Processor.from_pretrained("Salesforce/blip2-flan-t5-xl")
+
+
 @pytest.mark.parametrize(
-    "prompts_texts,num_videos,text_video_map,expected",
+    "prompts,text,num_query_tokens,expected",
     [
         (
-            [("A prompt", "A text")],
-            1,
-            [[0]],
-            {
-                "input_ids": torch.tensor([2, 250, 14302, 83, 2788, 50118, 2]),
-                "labels": torch.tensor([-100, -100, -100, 83, 2788, 50118, 2]),
-                "video_causal_mask": torch.ones(7, 1).long(),
-            },
-        ),
-        (
-            [("A prompt", None)],
-            1,
-            [[0]],
-            {
-                "input_ids": torch.tensor([2, 250, 14302]),
-                "labels": torch.tensor([-100, -100, -100]),
-                "video_causal_mask": torch.ones(3, 1).long(),
-            },
-        ),
-        (
-            [("A prompt", "A text")],
+            [("A prompt", 1)],
+            "A text",
             2,
-            [[0, 1]],
             {
-                "input_ids": torch.tensor([2, 250, 14302, 83, 2788, 50118, 2]),
-                "labels": torch.tensor([-100, -100, -100, 83, 2788, 50118, 2]),
-                "video_causal_mask": torch.ones(7, 2).long(),
+                "input_ids": torch.tensor(
+                    [2, 1, 1, 50118, 250, 14302, 83, 2788, 50118, 2]
+                ),
+                "labels": torch.tensor(
+                    [-100, -100, -100, -100, -100, -100, 83, 2788, 50118, 2]
+                ),
+                "video_input_mask": torch.tensor([0, 1, 1, 0, 0, 0, 0, 0, 0, 0]),
             },
         ),
         (
-            [("A prompt", None)],
+            [("A prompt", 1)],
+            None,
+            4,
+            {
+                "input_ids": torch.tensor([2, 1, 1, 1, 1, 50118, 250, 14302]),
+                "labels": torch.tensor(
+                    [-100, -100, -100, -100, -100, -100, -100, -100]
+                ),
+                "video_input_mask": torch.tensor([0, 1, 1, 1, 1, 0, 0, 0]),
+            },
+        ),
+        (
+            [("A prompt", 2)],
+            "A text",
             2,
-            [[0, 1]],
             {
-                "input_ids": torch.tensor([2, 250, 14302]),
-                "labels": torch.tensor([-100, -100, -100]),
-                "video_causal_mask": torch.ones(3, 2).long(),
+                "input_ids": torch.tensor(
+                    [2, 1, 1, 50118, 1, 1, 50118, 250, 14302, 83, 2788, 50118, 2]
+                ),
+                "labels": torch.tensor(
+                    [
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        83,
+                        2788,
+                        50118,
+                        2,
+                    ]
+                ),
+                "video_input_mask": torch.tensor(
+                    [0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+                ),
             },
         ),
         (
-            [("Prompt 1", "Text 1"), ("Prompt 2", "Text 2"), ("Prompt 3", "Text 3")],
-            3,
-            [[0], [1], [2]],
+            [("A prompt", 2)],
+            None,
+            4,
+            {
+                "input_ids": torch.tensor(
+                    [2, 1, 1, 1, 1, 50118, 1, 1, 1, 1, 50118, 250, 14302]
+                ),
+                "labels": torch.tensor(
+                    [
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                    ]
+                ),
+                "video_input_mask": torch.tensor(
+                    [0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0]
+                ),
+            },
+        ),
+        (
+            [
+                ("Prompt 1 Text 1", 2),
+                ("Prompt 2 Text 2", 1),
+                ("Prompt 3", 2),
+            ],
+            "Text 3",
+            2,
             {
                 "input_ids": torch.tensor(
                     [
                         2,
+                        1,
+                        1,
+                        50118,
+                        1,
+                        1,
+                        50118,
                         35396,
                         3320,
                         112,
                         14159,
                         112,
                         50118,
+                        1,
+                        1,
+                        50118,
                         35396,
                         3320,
                         132,
                         14159,
                         132,
+                        50118,
+                        1,
+                        1,
+                        50118,
+                        1,
+                        1,
                         50118,
                         35396,
                         3320,
@@ -190,70 +260,6 @@ def processor():
                         -100,
                         -100,
                         -100,
-                        14159,
-                        155,
-                        50118,
-                        2,
-                    ]
-                ),
-                "video_causal_mask": torch.tensor(
-                    [
-                        [1, 0, 0],
-                        [1, 0, 0],
-                        [1, 0, 0],
-                        [1, 0, 0],
-                        [1, 0, 0],
-                        [1, 0, 0],
-                        [1, 0, 0],
-                        [0, 1, 0],
-                        [0, 1, 0],
-                        [0, 1, 0],
-                        [0, 1, 0],
-                        [0, 1, 0],
-                        [0, 1, 0],
-                        [0, 0, 1],
-                        [0, 0, 1],
-                        [0, 0, 1],
-                        [0, 0, 1],
-                        [0, 0, 1],
-                        [0, 0, 1],
-                        [0, 0, 1],
-                    ]
-                ),
-            },
-        ),
-        (
-            [("Prompt 1", "Text 1"), ("Prompt 2", "Text 2"), ("Prompt 3", "Text 3")],
-            5,
-            [[0, 1], [2], [3, 4]],
-            {
-                "input_ids": torch.tensor(
-                    [
-                        2,
-                        35396,
-                        3320,
-                        112,
-                        14159,
-                        112,
-                        50118,
-                        35396,
-                        3320,
-                        132,
-                        14159,
-                        132,
-                        50118,
-                        35396,
-                        3320,
-                        155,
-                        14159,
-                        155,
-                        50118,
-                        2,
-                    ]
-                ),
-                "labels": torch.tensor(
-                    [
-                        -100,
                         -100,
                         -100,
                         -100,
@@ -275,55 +281,85 @@ def processor():
                         2,
                     ]
                 ),
-                "video_causal_mask": torch.tensor(
+                "video_input_mask": torch.tensor(
                     [
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
+                        0,
+                        1,
+                        1,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
                     ]
                 ),
             },
         ),
         (
             [
-                ("Prompt 1 Text 1", ""),
-                ("Prompt 2 Text 2", ""),
-                ("Prompt 3", None),
+                ("Prompt 1 Text 1", 2),
+                ("Prompt 2 Text 2", 1),
+                ("Prompt 3", 2),
             ],
-            5,
-            [[0, 1], [2], [3, 4]],
+            None,
+            2,
             {
                 "input_ids": torch.tensor(
                     [
                         2,
+                        1,
+                        1,
+                        50118,
+                        1,
+                        1,
+                        50118,
                         35396,
                         3320,
                         112,
                         14159,
                         112,
                         50118,
+                        1,
+                        1,
+                        50118,
                         35396,
                         3320,
                         132,
                         14159,
                         132,
+                        50118,
+                        1,
+                        1,
+                        50118,
+                        1,
+                        1,
                         50118,
                         35396,
                         3320,
@@ -348,46 +384,287 @@ def processor():
                         -100,
                         -100,
                         -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
+                        -100,
                     ]
                 ),
-                "video_causal_mask": torch.tensor(
+                "video_input_mask": torch.tensor(
                     [
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [1, 1, 0, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 1, 0, 0],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 1, 1],
+                        0,
+                        1,
+                        1,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
                     ]
                 ),
             },
         ),
     ],
 )
-def test_generate_input_ids_and_labels_from_interleaved(
-    processor: Blip2Processor,
-    prompts_texts: list[tuple[str, str | None]],
-    num_videos: int,
-    text_video_map: list[list[int]],
+def test_generate_input_ids_and_labels_from_interleaved_decoder_only(
+    decoder_only_processor: Blip2Processor,
+    prompts: list[tuple[str, int]],
+    text: str | None,
+    num_query_tokens: int,
     expected: dict[str, torch.Tensor],
 ) -> None:
     results = generate_input_ids_and_labels_from_interleaved(
-        processor.tokenizer, prompts_texts, num_videos, text_video_map
+        decoder_only_processor.tokenizer, prompts, text, num_query_tokens, True
     )
     assert results.keys() == expected.keys()
     assert results["input_ids"].equal(expected["input_ids"])
     assert results["labels"].equal(expected["labels"])
-    assert results["video_causal_mask"].equal(expected["video_causal_mask"])
+    assert results["video_input_mask"].equal(expected["video_input_mask"])
+
+
+@pytest.mark.parametrize(
+    "prompts,text,num_query_tokens,expected",
+    [
+        (
+            [("A prompt", 1)],
+            "A text",
+            2,
+            {
+                "input_ids": torch.tensor([0, 0, 3, 71, 9005, 1]),
+                "labels": torch.tensor([71, 1499, 1]),
+                "video_input_mask": torch.tensor([1, 1, 0, 0, 0, 0]),
+            },
+        ),
+        (
+            [("A prompt", 1)],
+            None,
+            4,
+            {
+                "input_ids": torch.tensor([0, 0, 0, 0, 3, 71, 9005, 1]),
+                "labels": torch.tensor([]),
+                "video_input_mask": torch.tensor([1, 1, 1, 1, 0, 0, 0, 0]),
+            },
+        ),
+        (
+            [("A prompt", 2)],
+            "A text",
+            2,
+            {
+                "input_ids": torch.tensor([0, 0, 3, 0, 0, 3, 71, 9005, 1]),
+                "labels": torch.tensor([71, 1499, 1]),
+                "video_input_mask": torch.tensor([1, 1, 0, 1, 1, 0, 0, 0, 0]),
+            },
+        ),
+        (
+            [("A prompt", 2)],
+            None,
+            4,
+            {
+                "input_ids": torch.tensor([0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 71, 9005, 1]),
+                "labels": torch.tensor([]),
+                "video_input_mask": torch.tensor(
+                    [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0]
+                ),
+            },
+        ),
+        (
+            [("Prompt 1 Text 1", 1), ("Prompt 2 Text 2", 1), ("Prompt 3", 1)],
+            "Text 3",
+            2,
+            {
+                "input_ids": torch.tensor(
+                    [
+                        0,
+                        0,
+                        3,
+                        749,
+                        1167,
+                        17,
+                        209,
+                        5027,
+                        209,
+                        3,
+                        0,
+                        0,
+                        3,
+                        749,
+                        1167,
+                        17,
+                        204,
+                        5027,
+                        204,
+                        3,
+                        0,
+                        0,
+                        3,
+                        749,
+                        1167,
+                        17,
+                        220,
+                        1,
+                    ]
+                ),
+                "labels": torch.tensor([5027, 220, 1]),
+                "video_input_mask": torch.tensor(
+                    [
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ]
+                ),
+            },
+        ),
+        (
+            [("Prompt 1 Text 1", 1), ("Prompt 2 Text 2", 1), ("Prompt 3 Text 3", 1)],
+            None,
+            2,
+            {
+                "input_ids": torch.tensor(
+                    [
+                        0,
+                        0,
+                        3,
+                        749,
+                        1167,
+                        17,
+                        209,
+                        5027,
+                        209,
+                        3,
+                        0,
+                        0,
+                        3,
+                        749,
+                        1167,
+                        17,
+                        204,
+                        5027,
+                        204,
+                        3,
+                        0,
+                        0,
+                        3,
+                        749,
+                        1167,
+                        17,
+                        220,
+                        5027,
+                        220,
+                        1,
+                    ]
+                ),
+                "labels": torch.tensor([]),
+                "video_input_mask": torch.tensor(
+                    [
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ]
+                ),
+            },
+        ),
+    ],
+)
+def test_generate_input_ids_and_labels_from_interleaved_seq2seq(
+    seq2seq_processor: Blip2Processor,
+    prompts: list[tuple[str, int]],
+    text: str | None,
+    num_query_tokens: int,
+    expected: dict[str, torch.Tensor],
+) -> None:
+    results = generate_input_ids_and_labels_from_interleaved(
+        seq2seq_processor.tokenizer, prompts, text, num_query_tokens, False
+    )
+    assert results.keys() == expected.keys()
+    assert results["input_ids"].equal(expected["input_ids"])
+    assert results["labels"].equal(expected["labels"])
+    assert results["video_input_mask"].equal(expected["video_input_mask"])
 
 
 @pytest.mark.parametrize(

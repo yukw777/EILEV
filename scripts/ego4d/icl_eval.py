@@ -77,10 +77,18 @@ def add_and_filter_verb_noun(
 
 
 class Preprocessor:
-    def __init__(self, processor: Blip2Processor, few_shot_prompt: str) -> None:
+    def __init__(
+        self,
+        processor: Blip2Processor,
+        few_shot_prompt: str,
+        num_query_tokens: int,
+        use_decoder_only_lm: bool,
+    ) -> None:
         self.processor = processor
         self.collator = DataCollatorForInterleavedVideoSeq2Seq(processor.tokenizer)
         self.few_shot_prompt = few_shot_prompt
+        self.num_query_tokens = num_query_tokens
+        self.use_decoder_only_lm = use_decoder_only_lm
 
     def preprocess(
         self,
@@ -89,7 +97,7 @@ class Preprocessor:
         datapoint: dict[str, Any],
         few_shot_examples: list[dict[str, Any]],
     ) -> dict[str, torch.Tensor]:
-        few_shot_prompts: list[tuple[str, str | None]] = [
+        few_shot_prompts: list[tuple[str, int]] = [
             (
                 " ".join(
                     [
@@ -97,18 +105,19 @@ class Preprocessor:
                         clean_narration_text(example["narration_text"]),
                     ]
                 ),
-                "",
+                1,
             )
             for example in few_shot_examples
         ]
         # input_ids: (prompt_seq_len)
         # labels: (prompt_seq_len)
-        # video_causal_mask: (prompt_seq_len, num_videos)
+        # video_input_mask: (prompt_seq_len)
         prompt_inputs = generate_input_ids_and_labels_from_interleaved(
             self.processor.tokenizer,
-            few_shot_prompts + [(prompt, None)],
-            len(few_shot_examples) + 1,
-            [[i] for i in range(len(few_shot_examples) + 1)],
+            few_shot_prompts + [(prompt, 1)],
+            None,
+            self.num_query_tokens,
+            self.use_decoder_only_lm,
         )
         # input_ids: (num_classes, class_seq_len)
         # attention_mask: (num_classes, class_seq_len)
@@ -134,7 +143,7 @@ class Preprocessor:
             # (1, prompt_seq_len)
             "prompt_input_ids": prompt_inputs["input_ids"].unsqueeze(0),
             # (1, prompt_seq_len, num_videos)
-            "prompt_video_causal_mask": prompt_inputs["video_causal_mask"].unsqueeze(0),
+            "prompt_video_input_mask": prompt_inputs["video_input_mask"].unsqueeze(0),
             # (num_classes, class_seq_len)
             "class_input_ids": class_inputs["input_ids"],
             # (num_classes, class_seq_len)
@@ -240,8 +249,8 @@ def eval(
         preprocessed["prompt_input_ids"] = preprocessed["prompt_input_ids"].to(
             device=model.device
         )
-        preprocessed["prompt_video_causal_mask"] = preprocessed[
-            "prompt_video_causal_mask"
+        preprocessed["prompt_video_input_mask"] = preprocessed[
+            "prompt_video_input_mask"
         ].to(device=model.device)
         preprocessed["class_input_ids"] = preprocessed["class_input_ids"].to(
             device=model.device
@@ -287,8 +296,8 @@ def eval(
         preprocessed["prompt_input_ids"] = preprocessed["prompt_input_ids"].to(
             device=model.device
         )
-        preprocessed["prompt_video_causal_mask"] = preprocessed[
-            "prompt_video_causal_mask"
+        preprocessed["prompt_video_input_mask"] = preprocessed[
+            "prompt_video_input_mask"
         ].to(device=model.device)
         preprocessed["class_input_ids"] = preprocessed["class_input_ids"].to(
             device=model.device
@@ -411,7 +420,10 @@ if __name__ == "__main__":
     assert set(fho_lta_taxonomy["nouns"]) == set(structured_noun_prompts.values())
 
     preprocessor = Preprocessor(
-        processor, "Question: What is the camera wearer doing? Answer:"
+        processor,
+        "Question: What is the camera wearer doing? Answer:",
+        model.config.num_query_tokens,
+        model.config.use_decoder_only_language_model,
     )
     eval(
         eval_dataset,

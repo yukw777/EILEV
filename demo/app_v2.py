@@ -32,33 +32,32 @@ class State:
 def respond(
     model: VideoBlipForConditionalGeneration,
     processor: Blip2Processor,
-    use_video_causal_mask: bool,
     state: State,
     chat_history: list[list[str | None | tuple]],
     top_k: int,
     max_new_tokens: int,
     penalty_alpha: float,
 ) -> list[list[str | None | tuple]]:
+    prompts: list[tuple[str, int]] = []
+    for text_block, videos in zip(state.text_blocks, state.text_block_video_map):
+        prompts.append((text_block, len(videos)))
     inputs = generate_input_ids_and_labels_from_interleaved(
         processor.tokenizer,
-        [(text_block, "") for text_block in state.text_blocks[:-1]]
-        + [(state.text_blocks[-1], None)],
-        len(state.videos),
-        state.text_block_video_map,
+        prompts,
+        None,
+        model.config.num_query_tokens,
+        model.config.use_decoder_only_language_model,
     )
 
     # process the inputs
     generate_kwargs = {
         "pixel_values": torch.stack(state.videos).unsqueeze(0).to(model.device),
         "input_ids": inputs["input_ids"].unsqueeze(0).to(model.device),
+        "video_input_mask": inputs["video_input_mask"].unsqueeze(0).to(model.device),
         "max_new_tokens": max_new_tokens,
         "penalty_alpha": penalty_alpha,
         "top_k": top_k,
     }
-    if use_video_causal_mask:
-        generate_kwargs["video_causal_mask"] = (
-            inputs["video_causal_mask"].unsqueeze(0).to(model.device)
-        )
 
     generated_ids = model.generate(**generate_kwargs)  # type: ignore
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[
@@ -189,7 +188,6 @@ def construct_demo(
     model: VideoBlipForConditionalGeneration,
     processor: Blip2Processor,
     video_path_handler: VideoPathHandler,
-    use_video_causal_mask: bool,
 ) -> gr.Blocks:
     top_k = gr.Slider(minimum=0, maximum=10, value=4, step=1, label="Top k")
     max_new_tokens = gr.Slider(
@@ -255,7 +253,7 @@ def construct_demo(
             with gr.Column(scale=0.3):
                 respond_button = gr.Button(value="Respond", variant="primary")
                 respond_button.click(
-                    partial(respond, model, processor, use_video_causal_mask),
+                    partial(respond, model, processor),
                     inputs=[state, chatbot, top_k, max_new_tokens, penalty_alpha],
                     outputs=[chatbot],
                 )
@@ -296,7 +294,6 @@ if __name__ == "__main__":
     parser.add_argument("--queue", action="store_true", default=False)
     parser.add_argument("--concurrency-count", type=int, default=1)
     parser.add_argument("--max-size", type=int, default=10)
-    parser.add_argument("--no_video_causal_mask", action="store_true")
     args = parser.parse_args()
 
     model = VideoBlipForConditionalGeneration.from_pretrained(args.model).to(
@@ -305,9 +302,7 @@ if __name__ == "__main__":
     if args.processor is None:
         args.processor = args.model
     processor = Blip2Processor.from_pretrained(args.processor)
-    demo = construct_demo(
-        model, processor, VideoPathHandler(), not args.no_video_causal_mask
-    )
+    demo = construct_demo(model, processor, VideoPathHandler())
     if args.queue:
         demo.queue(
             concurrency_count=args.concurrency_count,

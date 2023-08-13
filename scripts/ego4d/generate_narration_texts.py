@@ -41,18 +41,21 @@ class DataCollator(DataCollatorForInterleavedVideoSeq2Seq):
 @dataclass
 class Preprocessor:
     processor: Blip2Processor
+    num_query_tokens: int
+    decoder_only_lm: bool
     prompt: str
 
     def __call__(self, datapoint: dict[str, Any]) -> dict[str, Any]:
         inputs = generate_input_ids_and_labels_from_interleaved(
             self.processor.tokenizer,
             [
-                (self.prompt + " " + clean_narration_text(item["narration_text"]), "")
+                (self.prompt + " " + clean_narration_text(item["narration_text"]), 1)
                 for item in datapoint["items"][:-1]
             ]
-            + [(self.prompt, None)],
-            len(datapoint["items"]),
-            [[i] for i in range(len(datapoint["items"]))],
+            + [(self.prompt, 1)],
+            None,
+            self.num_query_tokens,
+            self.decoder_only_lm,
         )
         pixel_values = process(
             self.processor,
@@ -75,7 +78,6 @@ def eval(
     eval_dataloader: DataLoader,
     model: VideoBlipForConditionalGeneration | DistributedDataParallel,
     processor: Blip2Processor,
-    use_video_causal_mask: bool,
     print_narration_texts: bool,
     log_narration_texts: bool,
     generation_config: dict,
@@ -106,13 +108,10 @@ def eval(
         generate_kwargs = {
             "pixel_values": datapoint["pixel_values"].to(dtype=dtype, device=device),
             "input_ids": datapoint["input_ids"].to(device=device),
+            "video_input_mask": datapoint["video_input_mask"].to(device=device),
             "attention_mask": datapoint["attention_mask"].to(device=device),
             **generation_config,
         }
-        if use_video_causal_mask:
-            generate_kwargs["video_causal_mask"] = datapoint["video_causal_mask"].to(
-                device=device
-            )
         generated_ids = module.generate(**generate_kwargs)
         generated_ids = accelerator.pad_across_processes(
             generated_ids, dim=1, pad_index=processor.tokenizer.pad_token_id
@@ -182,7 +181,6 @@ if __name__ == "__main__":
     parser.add_argument("--num_shot", required=True, type=int)
     parser.add_argument("--verb_noun_ratio", required=True, type=float)
     parser.add_argument("--batch_size", default=1, type=int)
-    parser.add_argument("--no_video_causal_mask", action="store_true")
     parser.add_argument("--print_narration_texts", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=None, type=int)
     parser.add_argument("--random_seed", type=int, default=42)
@@ -219,7 +217,10 @@ if __name__ == "__main__":
         num_in_context_examples_per_sample=args.num_shot,
         verb_noun_ratio=args.verb_noun_ratio,
         transform=Preprocessor(
-            processor, "Question: What is the camera wearer doing? Answer:"
+            processor,
+            model.config.num_query_tokens,
+            model.config.use_decoder_only_language_model,
+            "Question: What is the camera wearer doing? Answer:",
         ),
     )
     model, eval_dataloader = accelerator.prepare(
@@ -241,7 +242,6 @@ if __name__ == "__main__":
         eval_dataloader,
         model,
         processor,
-        not args.no_video_causal_mask,
         args.print_narration_texts,
         args.wandb_project is not None,
         generation_config,

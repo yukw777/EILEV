@@ -17,7 +17,6 @@ parser.add_argument("--eval_narrated_actions_dir", required=True)
 parser.add_argument("--wandb_project", required=True)
 parser.add_argument("--job_name_prefix", required=True)
 parser.add_argument("--email")
-parser.add_argument("--no_video_causal_mask", action="store_true")
 parser.add_argument("--generation_config")
 parser.add_argument("--transformers_cache")
 args = parser.parse_args()
@@ -25,9 +24,6 @@ args = parser.parse_args()
 email = ""
 if args.email is not None:
     email = f"#SBATCH --mail-user={args.email}\n#SBATCH --mail-type=BEGIN,END"
-no_video_causal_mask = ""
-if args.no_video_causal_mask:
-    no_video_causal_mask = "--no_video_causal_mask"
 gen_config = ""
 if args.generation_config is not None:
     gen_config = f"--generation_config {args.generation_config}"
@@ -63,7 +59,6 @@ srun --cpus-per-task {args.num_dataloader_workers} poetry run torchrun --nnodes=
   --batch_size {args.batch_size} \
   --num_shot {args.num_shot} \
   --verb_noun_ratio {args.verb_noun_ratio} \
-  {no_video_causal_mask} \
   {gen_config} \
   --wandb_project {args.wandb_project}
 """  # noqa: E501

@@ -45,17 +45,26 @@ PROMPTS = [
 @dataclass
 class Preprocessor:
     tokenizer: PreTrainedTokenizer
+    num_query_tokens: int
+    decoder_only_lm: bool
     video_transform: Callable[[torch.Tensor], torch.Tensor] | None = None
 
     def __call__(self, datapoint: dict[str, Any]) -> dict[str, torch.Tensor]:
         preprocessed = generate_input_ids_and_labels_from_interleaved(
             self.tokenizer,
             [
-                (random.choice(PROMPTS), clean_narration_text(item["narration_text"]))
-                for item in datapoint["items"]
-            ],
-            len(datapoint["items"]),
-            [[i] for i in range(len(datapoint["items"]))],
+                (
+                    random.choice(PROMPTS)
+                    + " "
+                    + clean_narration_text(item["narration_text"]),
+                    1,
+                )
+                for item in datapoint["items"][:-1]
+            ]
+            + [(random.choice(PROMPTS), 1)],
+            clean_narration_text(datapoint["items"][-1]["narration_text"]),
+            self.num_query_tokens,
+            self.decoder_only_lm,
         )
         videos = [item["video"] for item in datapoint["items"]]
         if self.video_transform is not None:
@@ -122,6 +131,8 @@ def train() -> None:
         verb_noun_ratio=data_args.verb_noun_ratio,
         transform=Preprocessor(
             processor.tokenizer,
+            model.config.num_query_tokens,
+            model.config.use_decoder_only_language_model,
             video_transform=Compose(
                 [
                     UniformTemporalSubsample(model_args.num_subsample_frames),
@@ -155,6 +166,8 @@ def train() -> None:
         verb_noun_ratio=data_args.verb_noun_ratio,
         transform=Preprocessor(
             processor.tokenizer,
+            model.config.num_query_tokens,
+            model.config.use_decoder_only_language_model,
             video_transform=Compose(
                 [
                     UniformTemporalSubsample(model_args.num_subsample_frames),
