@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 import torch
@@ -668,139 +668,87 @@ def test_generate_input_ids_and_labels_from_interleaved_seq2seq(
 
 
 @pytest.mark.parametrize(
-    "datapoints,attention_mask,padding_side,expected_pixel_values,"
-    "expected_video_causal_mask",
+    "datapoints,padding_side,pad_to_multiple_of,expected_pixel_values,"
+    "expected_video_input_mask",
     [
         (
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 }
             ],
-            torch.ones(1, 3).long(),
             "left",
-            torch.ones(1, 2, 1, 1, 1, 1).long(),
-            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
+            None,
+            torch.ones(2, 1, 1, 1, 1),
+            torch.tensor([[0, 1, 1, 0]]),
         ),
         (
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 }
             ],
-            torch.ones(1, 3).long(),
             "right",
-            torch.ones(1, 2, 1, 1, 1, 1).long(),
-            torch.tensor([[[1, 0], [1, 0], [0, 1]]]),
+            None,
+            torch.ones(2, 1, 1, 1, 1),
+            torch.tensor([[0, 1, 1, 0]]),
         ),
         (
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 }
             ],
-            # pad to multiple of 8
-            torch.tensor([[1] * 3 + [0] * 5]),
             "left",
-            torch.ones(1, 2, 1, 1, 1, 1).long(),
-            torch.tensor(
-                [[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [1, 0], [1, 0], [0, 1]]]
-            ),
+            8,
+            torch.ones(2, 1, 1, 1, 1),
+            torch.tensor([[0] * 4 + [0, 1, 1, 0]]),
         ),
         (
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 }
             ],
-            # pad to multiple of 8
-            torch.tensor([[1] * 3 + [0] * 5]),
             "right",
-            torch.ones(1, 2, 1, 1, 1, 1).long(),
-            torch.tensor(
-                [[[1, 0], [1, 0], [0, 1], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]]
-            ),
+            8,
+            torch.ones(2, 1, 1, 1, 1),
+            torch.tensor([[0, 1, 1, 0] + [0] * 4]),
         ),
         (
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 },
                 {
                     "pixel_values": torch.ones(3, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0],
-                            [1, 0, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 0, 1],
-                            [0, 0, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(6).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1]),
                 },
                 {
                     "pixel_values": torch.ones(4, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0, 0],
-                            [1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(7).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1, 0]),
                 },
             ],
-            torch.tensor([[1] * 3 + [0] * 4, [1] * 7, [1] * 6 + [0]]),
             "left",
-            torch.stack(
-                [
-                    torch.concat(
-                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
-                    ),
-                    torch.concat(
-                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
-                    ),
-                    torch.ones(4, 1, 1, 1, 1),
-                ]
-            ),
+            None,
+            torch.ones(9, 1, 1, 1, 1),
             torch.tensor(
                 [
-                    [
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                    ],
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 0],
-                        [0, 0, 1, 0],
-                    ],
-                    [
-                        [0, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 1],
-                    ],
+                    [0] * 3 + [0, 1, 1, 0],
+                    [0] + [0, 1, 1, 0, 1, 1],
+                    [0, 1, 1, 0, 1, 1, 0],
                 ]
             ),
         ),
@@ -808,78 +756,28 @@ def test_generate_input_ids_and_labels_from_interleaved_seq2seq(
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 },
                 {
                     "pixel_values": torch.ones(3, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0],
-                            [1, 0, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 0, 1],
-                            [0, 0, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(6).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1]),
                 },
                 {
                     "pixel_values": torch.ones(4, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0, 0],
-                            [1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(7).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1, 0]),
                 },
             ],
-            torch.tensor([[0] * 4 + [1] * 3, [1] * 7, [0] + [1] * 6]),
             "right",
-            torch.stack(
-                [
-                    torch.concat(
-                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
-                    ),
-                    torch.concat(
-                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
-                    ),
-                    torch.ones(4, 1, 1, 1, 1),
-                ]
-            ),
+            None,
+            torch.ones(9, 1, 1, 1, 1),
             torch.tensor(
                 [
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                    ],
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 0],
-                        [0, 0, 1, 0],
-                    ],
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 1],
-                        [0, 0, 0, 0],
-                    ],
+                    [0, 1, 1, 0] + [0] * 3,
+                    [0, 1, 1, 0, 1, 1] + [0],
+                    [0, 1, 1, 0, 1, 1, 0],
                 ]
             ),
         ),
@@ -887,82 +785,28 @@ def test_generate_input_ids_and_labels_from_interleaved_seq2seq(
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 },
                 {
                     "pixel_values": torch.ones(3, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0],
-                            [1, 0, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 0, 1],
-                            [0, 0, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(6).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1]),
                 },
                 {
                     "pixel_values": torch.ones(4, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0, 0],
-                            [1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(7).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1, 0]),
                 },
             ],
-            # pad to multiple of 8
-            torch.tensor([[1] * 3 + [0] * 5, [1] * 7 + [0], [1] * 6 + [0] * 2]),
             "left",
-            torch.stack(
-                [
-                    torch.concat(
-                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
-                    ),
-                    torch.concat(
-                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
-                    ),
-                    torch.ones(4, 1, 1, 1, 1),
-                ]
-            ),
+            8,
+            torch.ones(9, 1, 1, 1, 1),
             torch.tensor(
                 [
-                    [
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                    ],
-                    [
-                        [0, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 0],
-                        [0, 0, 1, 0],
-                    ],
-                    [
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 1],
-                    ],
+                    [0] * 4 + [0, 1, 1, 0],
+                    [0] * 2 + [0, 1, 1, 0, 1, 1],
+                    [0] + [0, 1, 1, 0, 1, 1, 0],
                 ]
             ),
         ),
@@ -970,111 +814,45 @@ def test_generate_input_ids_and_labels_from_interleaved_seq2seq(
             [
                 {
                     "pixel_values": torch.ones(2, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor([[1, 0], [1, 0], [0, 1]]),
+                    "input_ids": torch.ones(4).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0]),
                 },
                 {
                     "pixel_values": torch.ones(3, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0],
-                            [1, 0, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 1, 0],
-                            [0, 0, 1],
-                            [0, 0, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(6).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1]),
                 },
                 {
                     "pixel_values": torch.ones(4, 1, 1, 1, 1),
-                    "video_causal_mask": torch.tensor(
-                        [
-                            [1, 0, 0, 0],
-                            [1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 1],
-                        ]
-                    ),
+                    "input_ids": torch.ones(7).long(),
+                    "video_input_mask": torch.tensor([0, 1, 1, 0, 1, 1, 0]),
                 },
             ],
-            # pad to multiple of 8
-            torch.tensor([[0] * 5 + [1] * 3, [0] + [1] * 7, [0] * 2 + [1] * 6]),
             "right",
-            torch.stack(
-                [
-                    torch.concat(
-                        [torch.ones(2, 1, 1, 1, 1), torch.zeros(2, 1, 1, 1, 1)]
-                    ),
-                    torch.concat(
-                        [torch.ones(3, 1, 1, 1, 1), torch.zeros(1, 1, 1, 1, 1)]
-                    ),
-                    torch.ones(4, 1, 1, 1, 1),
-                ]
-            ),
+            8,
+            torch.ones(9, 1, 1, 1, 1),
             torch.tensor(
                 [
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                    ],
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 0],
-                        [0, 0, 1, 0],
-                        [0, 0, 0, 0],
-                    ],
-                    [
-                        [1, 0, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 1],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0],
-                    ],
+                    [0, 1, 1, 0] + [0] * 4,
+                    [0, 1, 1, 0, 1, 1] + [0] * 2,
+                    [0, 1, 1, 0, 1, 1, 0] + [0],
                 ]
             ),
         ),
     ],
 )
 def test_data_collator_for_interleaved_video_seq2seq(
+    decoder_only_processor,
     datapoints,
-    attention_mask,
     padding_side,
+    pad_to_multiple_of,
     expected_pixel_values,
-    expected_video_causal_mask,
+    expected_video_input_mask,
 ):
-    def mock_call(features, return_tensors):
-        return BatchEncoding(
-            data={
-                "attention_mask": attention_mask,
-                "pixel_values": torch.stack(
-                    [feature.pop("pixel_values") for feature in features]
-                ),
-            }
-        )
-
-    with patch(
-        "video_blip.data.utils.DataCollatorForVideoSeq2Seq.__call__",
-        side_effect=mock_call,
-    ):
-        collator = DataCollatorForInterleavedVideoSeq2Seq(
-            Mock(padding_side=padding_side)
-        )
-        collated = collator(datapoints)
-        assert collated["pixel_values"].equal(expected_pixel_values)
-        assert collated["video_causal_mask"].equal(expected_video_causal_mask)
+    decoder_only_processor.tokenizer.padding_side = padding_side
+    collator = DataCollatorForInterleavedVideoSeq2Seq(
+        decoder_only_processor.tokenizer, pad_to_multiple_of=pad_to_multiple_of
+    )
+    collated = collator(datapoints)
+    assert collated["pixel_values"].equal(expected_pixel_values)
+    assert collated["video_input_mask"].equal(expected_video_input_mask)

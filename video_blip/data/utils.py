@@ -4,7 +4,6 @@ from collections.abc import Iterable
 from typing import TypeVar
 
 import torch
-import torch.nn.functional as F
 from transformers import BatchEncoding, DataCollatorForSeq2Seq, PreTrainedTokenizer
 
 C_REGEX = re.compile(r"^\#C\s+C", re.IGNORECASE)
@@ -29,46 +28,37 @@ class DataCollatorForVideoSeq2Seq(DataCollatorForSeq2Seq):
         return collated
 
 
-class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForVideoSeq2Seq):
+class DataCollatorForInterleavedVideoSeq2Seq(DataCollatorForSeq2Seq):
     def __call__(self, features, return_tensors=None):
-        max_num_vids = max(feature["pixel_values"].size(0) for feature in features)
-        video_causal_mask_list = []
-        for feature in features:
-            num_videos_to_pad = max_num_vids - feature["pixel_values"].size(0)
-            feature["pixel_values"] = F.pad(
-                feature["pixel_values"],
-                (0, 0, 0, 0, 0, 0, 0, 0, 0, num_videos_to_pad),
-            )
-            video_causal_mask_list.append(
-                F.pad(feature.pop("video_causal_mask"), (0, num_videos_to_pad))
-            )
-
-        collated = super().__call__(features, return_tensors=return_tensors)
-        # use the text token length calculated by super() as it handles
-        # pad_to_multiple_of.
-        max_text_token_len = collated["attention_mask"].size(1)
-        max_video_token_len = max(mask.size(1) for mask in video_causal_mask_list)
-        collated["video_causal_mask"] = torch.stack(
-            [
-                F.pad(
-                    mask,
-                    (
-                        0,
-                        max_video_token_len - mask.size(1),
-                        0,
-                        max_text_token_len - mask.size(0),
-                    )
-                    if self.tokenizer.padding_side == "right"
-                    else (
-                        0,
-                        max_video_token_len - mask.size(1),
-                        max_text_token_len - mask.size(0),
-                        0,
-                    ),
-                )
-                for mask in video_causal_mask_list
-            ]
+        pixel_values = torch.cat(
+            [feature.pop("pixel_values") for feature in features]
+            if "pixel_values" in features[0].keys()
+            else None,
         )
+        video_input_masks = (
+            [feature.pop("video_input_mask") for feature in features]
+            if "video_input_mask" in features[0].keys()
+            else None
+        )
+        collated = super().__call__(features, return_tensors=return_tensors)
+        if video_input_masks is not None:
+            max_input_id_len = collated["input_ids"].size(1)
+            padded_video_input_masks = []
+            for video_input_mask in video_input_masks:
+                remainder = torch.tensor(
+                    [0] * (max_input_id_len - len(video_input_mask))
+                )
+                if self.tokenizer.padding_side == "right":
+                    padded_video_input_masks.append(
+                        torch.cat([video_input_mask, remainder])
+                    )
+                else:
+                    padded_video_input_masks.append(
+                        torch.cat([remainder, video_input_mask])
+                    )
+            collated["video_input_mask"] = torch.stack(padded_video_input_masks)
+        if pixel_values is not None:
+            collated["pixel_values"] = pixel_values
         return collated
 
 
