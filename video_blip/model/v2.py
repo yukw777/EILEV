@@ -636,7 +636,14 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         # (batch_size, seq_len, text_hidden_size)
         inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
         if video_features is not None:
-            inputs_embeds[video_input_mask] = video_features
+            # we need to clone inputs_embeds first since it may require gradients
+            # and index assignment is an inplace operation
+            tmp_inputs_embeds = inputs_embeds.clone()
+            tmp_inputs_embeds[video_input_mask] = video_features.to(
+                # for mixed-precision training
+                dtype=tmp_inputs_embeds.dtype
+            )
+            inputs_embeds = tmp_inputs_embeds
 
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)  # type: ignore
