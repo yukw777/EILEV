@@ -464,29 +464,29 @@ class VideoBlipVisionModel(Blip2VisionModel):
         through the original vision model, then unflatten it back.
 
         :param pixel_values: a tensor of shape
-            (batch, num_videos, channel, time, height, width)
+            (num_videos, channel, time, height, width)
 
         :returns:
             last_hidden_state: a tensor of shape
-                (batch, num_videos, time * seq_len, hidden_size)
-            pooler_output: a tensor of shape (batch, num_videos, time, hidden_size)
+                (num_videos, time * seq_len, hidden_size)
+            pooler_output: a tensor of shape (num_videos, time, hidden_size)
             hidden_states:
                 a tuple of tensors of shape
-                (batch, num_videos, time * seq_len, hidden_size),
+                (num_videos, time * seq_len, hidden_size),
                 one for the output of the embeddings + one for each layer
             attentions:
                 a tuple of tensors of shape
-                (batch, num_videos, time, num_heads, seq_len, seq_len),
+                (num_videos, time, num_heads, seq_len, seq_len),
                 one for each layer
         """
         if pixel_values is None:
             raise ValueError("You have to specify pixel_values")
 
-        batch, num_videos, _, time, _, _ = pixel_values.size()
+        num_videos, _, time, _, _ = pixel_values.size()
 
-        # flatten along the batch and time dimension to create a tensor of shape
-        # (batch * num_videos * time, channel, height, width)
-        flat_pixel_values = pixel_values.permute(0, 1, 3, 2, 4, 5).flatten(end_dim=2)
+        # flatten along the video and time dimension to create a tensor of shape
+        # (num_videos * time, channel, height, width)
+        flat_pixel_values = pixel_values.permute(0, 2, 1, 3, 4).flatten(end_dim=1)
 
         vision_outputs: BaseModelOutputWithPooling = super().forward(
             pixel_values=flat_pixel_values,
@@ -497,29 +497,29 @@ class VideoBlipVisionModel(Blip2VisionModel):
 
         # now restore the original dimensions
         # vision_outputs.last_hidden_state is of shape
-        # (batch * num_videos * time, seq_len, hidden_size)
+        # (num_videos * time, seq_len, hidden_size)
         seq_len = vision_outputs.last_hidden_state.size(1)
         last_hidden_state = vision_outputs.last_hidden_state.view(
-            batch, num_videos, time * seq_len, -1
+            num_videos, time * seq_len, -1
         )
         # vision_outputs.pooler_output is of shape
-        # (batch * num_videos * time, hidden_size)
-        pooler_output = vision_outputs.pooler_output.view(batch, num_videos, time, -1)
+        # (num_videos * time, hidden_size)
+        pooler_output = vision_outputs.pooler_output.view(num_videos, time, -1)
         # hidden_states is a tuple of tensors of shape
-        # (batch * num_videos * time, seq_len, hidden_size)
+        # (num_videos * time, seq_len, hidden_size)
         hidden_states = (
             tuple(
-                hidden.view(batch, num_videos, time * seq_len, -1)
+                hidden.view(num_videos, time * seq_len, -1)
                 for hidden in vision_outputs.hidden_states
             )
             if vision_outputs.hidden_states is not None
             else None
         )
         # attentions is a tuple of tensors of shape
-        # (batch * num_videos * time, num_heads, seq_len, seq_len)
+        # (num_videos * time, num_heads, seq_len, seq_len)
         attentions = (
             tuple(
-                hidden.view(batch, num_videos, time, -1, seq_len, seq_len)
+                hidden.view(num_videos, time, -1, seq_len, seq_len)
                 for hidden in vision_outputs.attentions
             )
             if vision_outputs.attentions is not None
@@ -580,7 +580,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         undocumented parameters.
 
         :param pixel_values: a tensor of shape
-            (batch, num_videos, channel, time, height, width)
+            (num_videos, channel, time, height, width)
         :param video_input_mask: a tensor of shape (batch, seq_len)
         """
         if pixel_values is not None:
@@ -598,7 +598,6 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         if pixel_values is not None:
             # step 1: forward the images through the vision encoder
             # to get image embeddings of shape
-            # (batch_size, num_videos, time * vision_seq_len, vision_hidden_size)
             vision_outputs = self.vision_model(
                 pixel_values=pixel_values,
                 output_attentions=output_attentions,
@@ -606,12 +605,12 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
                 return_dict=return_dict,
             )
             assert vision_outputs is not None
+            # (num_videos, time * vision_seq_len, vision_hidden_size)
             image_embeds = vision_outputs[0]
 
             # step 2: forward the query tokens through the QFormer,
             # using the image embeddings for cross-attention
-            # (batch_size * num_videos, time * vision_seq_len, vision_hidden_size)
-            image_embeds = image_embeds.flatten(end_dim=1)
+            # (num_videos, time * vision_seq_len, vision_hidden_size)
             image_attention_mask = torch.ones(
                 image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
             )
@@ -625,16 +624,14 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
                 output_hidden_states=output_hidden_states,
                 return_dict=return_dict,
             )
-            # (batch_size * num_videos, num_query_tokens, qformer_hidden_size)
+            # (num_videos, num_query_tokens, qformer_hidden_size)
             query_output = query_outputs[0]
 
             # step 3: project the qformer tokens to the language model space
-            batch_size, num_videos, _, _, _, _ = pixel_values.size()
-            # (batch_size * num_videos * num_query_tokens, text_hidden_size)
+            num_videos = pixel_values.size(0)
+            # (num_videos * num_query_tokens, text_hidden_size)
             video_features = self.language_projection(
-                query_output.view(
-                    batch_size * num_videos * self.config.num_query_tokens, -1
-                )
+                query_output.view(num_videos * self.config.num_query_tokens, -1)
             )
         # (batch_size, seq_len, text_hidden_size)
         inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
@@ -682,7 +679,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
     @torch.no_grad()
     def generate(
         self,
-        input_ids: torch.Tensor | None = None,
+        input_ids: torch.Tensor,
         pixel_values: torch.Tensor | None = None,
         video_input_mask: torch.Tensor | None = None,
         attention_mask: torch.Tensor | None = None,
@@ -695,6 +692,8 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
 
         :param video_input_mask: a tensor of shape (batch, seq_len)
         """
+        # at least one of input_ids or pixel_values should be given
+        assert not (input_ids is None and pixel_values is None)
         if pixel_values is not None:
             # if pixel_values is given, we need video_input_mask
             assert video_input_mask is not None
@@ -707,15 +706,13 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         if pixel_values is not None:
             # step 1: forward the images through the vision encoder,
             # to get image embeddings of shape
-            # (batch_size, num_videos, time * vision_seq_len, vision_hidden_size)
+            # (num_videos, time * vision_seq_len, vision_hidden_size)
             image_embeds = self.vision_model(
                 pixel_values, return_dict=True
             ).last_hidden_state
 
             # step 2: forward the query tokens through the QFormer,
             # using the image embeddings for cross-attention
-            # (batch_size * num_videos, time * vision_seq_len, vision_hidden_size)
-            image_embeds = image_embeds.flatten(end_dim=1)
             image_attention_mask = torch.ones(
                 image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
             )
@@ -727,22 +724,14 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
                 encoder_attention_mask=image_attention_mask,
                 return_dict=True,
             )
-            # (batch_size * num_videos, num_query_tokens, qformer_hidden_size)
+            # (num_videos, num_query_tokens, qformer_hidden_size)
             query_output = query_outputs.last_hidden_state
 
             # step 3: project the qformer tokens to the language model space
-            batch_size, num_videos, _, _, _, _ = pixel_values.size()
+            num_videos = pixel_values.size(0)
             # (batch_size * num_videos * num_query_tokens, text_hidden_size)
             video_features = self.language_projection(
-                query_output.view(
-                    batch_size * num_videos * self.config.num_query_tokens, -1
-                )
-            )
-        if input_ids is None:
-            input_ids = (
-                torch.LongTensor([[self.config.text_config.bos_token_id]])
-                .repeat(batch_size, 1)
-                .to(image_embeds.device)  # type: ignore
+                query_output.view(num_videos * self.config.num_query_tokens, -1)
             )
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)  # type: ignore
@@ -777,7 +766,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         :param class_input_ids: tensor of shape (num_classes, class_seq_len)
         :param prompt_attention_mask: tensor of shape (batch, prompt_seq_len)
         :param pixel_values: tensor of shape
-            (batch, num_videos, channel, time, height, width)
+            (num_videos, channel, time, height, width)
         :param prompt_video_input_mask: tensor of shape (batch, prompt_seq_len)
         :param class_attention_mask: tensor of shape (num_classes, class_seq_len)
         :param class_batch_size: batch size for processing classes
@@ -791,20 +780,18 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
             assert prompt_video_input_mask is not None
             prompt_video_input_mask = prompt_video_input_mask.bool()
 
-        batch = prompt_input_ids.size(0)
         prompt_video_features: torch.Tensor | None = None
         if pixel_values is not None:
             # step 1: forward the images through the vision encoder
             # to get image embeddings of shape
-            # (batch, num_videos, time * vision_seq_len, vision_hidden_size)
+            # (num_videos, time * vision_seq_len, vision_hidden_size)
             image_embeds = self.vision_model(
                 pixel_values, return_dict=True
             ).last_hidden_state
 
             # step 2: forward the query tokens through the QFormer,
             # using the image embeddings for cross-attention
-            # (batch * num_videos, time * vision_seq_len, vision_hidden_size)
-            image_embeds = image_embeds.flatten(end_dim=1)
+            # (num_videos, time * vision_seq_len, vision_hidden_size)
             image_attention_mask = torch.ones(
                 image_embeds.size()[:-1], dtype=torch.long, device=image_embeds.device
             )
@@ -816,14 +803,14 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
                 encoder_attention_mask=image_attention_mask,
                 return_dict=True,
             )
-            # (batch * num_videos, num_query_tokens, qformer_hidden_size)
+            # (num_videos, num_query_tokens, qformer_hidden_size)
             query_output = query_outputs.last_hidden_state
 
             # step 3: project the qformer tokens to the language model space
-            num_videos = pixel_values.size(1)
-            # (batch * num_videos * num_query_tokens, hidden)
+            num_videos = pixel_values.size(0)
+            # (num_videos * num_query_tokens, hidden)
             prompt_video_features = self.language_projection(
-                query_output.view(batch * num_videos * self.config.num_query_tokens, -1)
+                query_output.view(num_videos * self.config.num_query_tokens, -1)
             )
         # (batch, prompt_seq_len, hidden)
         prompt_input_embeds = self.language_model.get_input_embeddings()(
@@ -845,6 +832,7 @@ class VideoBlipForConditionalGeneration(Blip2ForConditionalGeneration):
         if class_batch_size is None:
             class_batch_size = num_classes
         mean_class_log_likelihoods: list[torch.Tensor] = []
+        batch = prompt_input_ids.size(0)
         for i in range(0, num_classes, class_batch_size):
             # (batch, class_batch_size)
             mean_log_likelihood = self._calc_class_log_likelihood(

@@ -1146,7 +1146,6 @@ def test_v2_video_opt_for_causal_lm_forward(
 @pytest.mark.parametrize("output_attentions", [True, False])
 @pytest.mark.parametrize("time", [1, 8])
 @pytest.mark.parametrize("num_videos", [1, 5])
-@pytest.mark.parametrize("batch", [1, 4])
 @pytest.mark.parametrize(
     "config",
     [
@@ -1170,7 +1169,6 @@ def test_v2_video_opt_for_causal_lm_forward(
 )
 def test_v2_video_blip_vision_model_forward(
     config: Blip2VisionConfig,
-    batch: int,
     num_videos: int,
     time: int,
     output_attentions: bool,
@@ -1179,9 +1177,8 @@ def test_v2_video_blip_vision_model_forward(
     model = VideoBlipVisionModel(config)
     outputs = model(
         pixel_values=torch.rand(
-            # channel is pretty much always 3
-            batch,
             num_videos,
+            # channel is pretty much always 3
             3,
             time,
             config.image_size,
@@ -1195,18 +1192,16 @@ def test_v2_video_blip_vision_model_forward(
     # then add a cls token.
     num_tokens = (config.image_size // config.patch_size) ** 2 + 1
     assert last_hidden_state.size() == (
-        batch,
         num_videos,
         time * num_tokens,
         config.hidden_size,
     )
-    assert pooler_output.size() == (batch, num_videos, time, config.hidden_size)
+    assert pooler_output.size() == (num_videos, time, config.hidden_size)
 
     if output_attentions:
         assert len(attentions) == config.num_hidden_layers
         for attn in attentions:
             assert attn.size() == (
-                batch,
                 num_videos,
                 time,
                 config.num_attention_heads,
@@ -1220,12 +1215,7 @@ def test_v2_video_blip_vision_model_forward(
         # num_hidden_layers + 1 for embeddings
         assert len(hidden_states) == config.num_hidden_layers + 1
         for hidden in hidden_states:
-            assert hidden.size() == (
-                batch,
-                num_videos,
-                time * num_tokens,
-                config.hidden_size,
-            )
+            assert hidden.size() == (num_videos, time * num_tokens, config.hidden_size)
     else:
         assert hidden_states is None
 
@@ -1234,8 +1224,8 @@ def test_v2_video_blip_vision_model_forward(
 @pytest.mark.parametrize("output_attentions", [True, False])
 @pytest.mark.parametrize("seq_len", [16, 32])
 @pytest.mark.parametrize("time", [1, 8])
-@pytest.mark.parametrize("num_videos", [None, 1, 3])
-@pytest.mark.parametrize("batch", [1, 4])
+@pytest.mark.parametrize("num_videos", [None, 2, 4])
+@pytest.mark.parametrize("batch", [1, 2])
 @pytest.mark.parametrize(
     "config",
     [
@@ -1307,9 +1297,8 @@ def test_v2_video_blip_for_cond_gen(
         torch.ones(batch, seq_len).long(),
         attention_mask=torch.ones(batch, seq_len).long(),
         pixel_values=torch.rand(
-            # channel is pretty much always 3
-            batch,
             num_videos,
+            # channel is pretty much always 3
             3,
             time,
             config.vision_config.image_size,
@@ -1318,8 +1307,8 @@ def test_v2_video_blip_for_cond_gen(
         if num_videos is not None
         else None,
         video_input_mask=torch.tensor(
-            [1] * num_videos * config.num_query_tokens
-            + [0] * (seq_len - num_videos * config.num_query_tokens)
+            [1] * (num_videos // batch * config.num_query_tokens)
+            + [0] * (seq_len - num_videos // batch * config.num_query_tokens)
         )
         .unsqueeze(0)
         .expand(batch, -1)
@@ -1348,8 +1337,8 @@ def test_v2_video_blip_for_cond_gen(
 )
 @pytest.mark.parametrize("seq_len", [16, 32])
 @pytest.mark.parametrize("time", [1, 8])
-@pytest.mark.parametrize("num_videos", [None, 1, 3])
-@pytest.mark.parametrize("batch", [1, 4])
+@pytest.mark.parametrize("num_videos", [None, 2, 4])
+@pytest.mark.parametrize("batch", [1, 2])
 @pytest.mark.parametrize(
     "config",
     [
@@ -1416,9 +1405,8 @@ def test_v2_video_blip_for_cond_gen_generate(
         input_ids=torch.ones(batch, seq_len).long(),
         attention_mask=torch.ones(batch, seq_len).long(),
         pixel_values=torch.rand(
-            # channel is pretty much always 3
-            batch,
             num_videos,
+            # channel is pretty much always 3
             3,
             time,
             config.vision_config.image_size,
@@ -1427,8 +1415,8 @@ def test_v2_video_blip_for_cond_gen_generate(
         if num_videos is not None
         else None,
         video_input_mask=torch.tensor(
-            [1] * num_videos * config.num_query_tokens
-            + [0] * (seq_len - num_videos * config.num_query_tokens)
+            [1] * (num_videos // batch * config.num_query_tokens)
+            + [0] * (seq_len - num_videos // batch * config.num_query_tokens)
         )
         .unsqueeze(0)
         .expand(batch, -1)
@@ -1445,8 +1433,8 @@ def test_v2_video_blip_for_cond_gen_generate(
 @pytest.mark.parametrize("class_batch_size", [None, 3])
 @pytest.mark.parametrize("num_classes", [4, 6])
 @pytest.mark.parametrize("prompt_seq_len", [16, 32])
-@pytest.mark.parametrize("num_videos", [None, 1, 3])
-@pytest.mark.parametrize("batch", [1, 4])
+@pytest.mark.parametrize("num_videos", [None, 2, 4])
+@pytest.mark.parametrize("batch", [1, 2])
 @pytest.mark.parametrize(
     "config",
     [
@@ -1493,7 +1481,6 @@ def test_v2_video_blip_for_cond_gen_classify(
         "class_input_ids": torch.ones(num_classes, class_seq_len).long(),
         "prompt_attention_mask": torch.ones(batch, prompt_seq_len).long(),
         "pixel_values": torch.rand(
-            batch,
             num_videos,
             # channel is pretty much always 3
             3,
@@ -1504,8 +1491,8 @@ def test_v2_video_blip_for_cond_gen_classify(
         if num_videos is not None
         else None,
         "prompt_video_input_mask": torch.tensor(
-            [1] * num_videos * config.num_query_tokens
-            + [0] * (prompt_seq_len - num_videos * config.num_query_tokens)
+            [1] * (num_videos // batch * config.num_query_tokens)
+            + [0] * (prompt_seq_len - num_videos // batch * config.num_query_tokens)
         )
         .unsqueeze(0)
         .expand(batch, -1)
