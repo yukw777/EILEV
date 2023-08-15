@@ -51,7 +51,7 @@ def respond(
 
     # process the inputs
     generate_kwargs = {
-        "pixel_values": torch.stack(state.videos).unsqueeze(0).to(model.device),
+        "pixel_values": torch.stack(state.videos).to(model.device),
         "input_ids": inputs["input_ids"].unsqueeze(0).to(model.device),
         "video_input_mask": inputs["video_input_mask"].unsqueeze(0).to(model.device),
         "max_new_tokens": max_new_tokens,
