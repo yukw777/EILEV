@@ -84,11 +84,11 @@ def eval(
     num_eval_datapoints: int | None,
 ) -> None:
     if isinstance(model, DistributedDataParallel):
-        pass
         dtype = model.module.dtype
         module = model.module
     else:
         dtype = model.dtype
+        module = model
     device = model.device
     if log_narration_texts:
         table = wandb.Table(
