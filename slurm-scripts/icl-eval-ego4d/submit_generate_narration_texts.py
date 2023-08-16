@@ -31,11 +31,10 @@ transformers_cache = ""
 if args.transformers_cache is not None:
     transformers_cache = f"export TRANSFORMERS_CACHE={args.transformers_cache}"
 
-multi_gpu = rf"""RDZV_ID=$RANDOM
+multi_gpu = f"""RDZV_ID=$RANDOM
 MASTER_NODE=$(srun --nodes=1 --ntasks=1 hostname)
-srun --cpus-per-task {args.num_dataloader_workers} poetry run torchrun --nnodes={args.num_gpus} --nproc_per_node=1 --rdzv-id=$RDZV_ID --rdzv-backend=c10d --rdzv-endpoint=$MASTER_NODE \
-  ../../scripts/ego4d/generate_narration_texts.py \
-"""  # noqa: E501
+srun --cpus-per-task {args.num_dataloader_workers} poetry run torchrun --nnodes={args.num_gpus} --nproc_per_node=1 --rdzv-id=$RDZV_ID --rdzv-backend=c10d --rdzv-endpoint=$MASTER_NODE \\
+  ../../scripts/ego4d/generate_narration_texts.py \\"""  # noqa: E501
 
 single_gpu = "poetry run python ../../scripts/ego4d/generate_narration_texts.py \\"
 
