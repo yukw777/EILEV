@@ -21,7 +21,7 @@ parser.add_argument("--val_num_in_context_examples_per_sample", type=int, requir
 parser.add_argument("--verb_noun_ratio", type=float, required=True)
 parser.add_argument("--dataloader_num_workers", type=int, required=True)
 parser.add_argument("--train_batch_size", type=int, required=True)
-parser.add_argument("--gradient_accumulation_steps", type=int, required=True)
+parser.add_argument("--per_device_train_batch_size", type=int, required=True)
 parser.add_argument("--per_device_eval_batch_size", type=int, required=True)
 parser.add_argument("--num_train_epochs", type=int, default=5)
 parser.add_argument("--warmup_steps", type=int, default=0)
@@ -72,8 +72,8 @@ if args.deepspeed_stage_2:
     ).decode()
     deepspeed = f"--deepspeed {encoded_config}"
 
-per_device_train_batch_size = (
-    args.train_batch_size // args.gradient_accumulation_steps // args.num_gpus
+gradient_accumulation_steps = (
+    args.train_batch_size // args.per_device_train_batch_size // args.num_gpus
 )
 
 output_dir = os.path.join(args.output_dir, args.run_name)
@@ -109,8 +109,8 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     --num_train_epochs {args.num_train_epochs} \
     --warmup_steps {args.warmup_steps} \
     --learning_rate 1e-5 \
-    --per_device_train_batch_size {per_device_train_batch_size} \
-    --gradient_accumulation_steps {args.gradient_accumulation_steps} \
+    --per_device_train_batch_size {args.per_device_train_batch_size} \
+    --gradient_accumulation_steps {gradient_accumulation_steps} \
     --ddp_find_unused_parameters False \
     --per_device_eval_batch_size {args.per_device_eval_batch_size} \
     --weight_decay 0.05 \
