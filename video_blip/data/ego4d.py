@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import random
 from collections import defaultdict
@@ -15,8 +14,6 @@ from pytorchvideo.data.video import VideoPathHandler
 from torch.utils.data import Dataset
 
 from video_blip.data.utils import C_REGEX
-
-logger = logging.getLogger(__name__)
 
 
 class NarratedActionClipSampler(ClipSampler):
