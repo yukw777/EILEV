@@ -1,9 +1,13 @@
+import random
 import re
 import string
 from collections.abc import Iterable
-from typing import TypeVar
+from fractions import Fraction
+from typing import Any, TypeVar
 
 import torch
+from pytorchvideo.data import ClipSampler
+from pytorchvideo.data.clip_sampling import ClipInfo
 from transformers import BatchEncoding, DataCollatorForSeq2Seq, PreTrainedTokenizer
 
 C_REGEX = re.compile(r"^\#C\s+C", re.IGNORECASE)
@@ -225,3 +229,85 @@ T = TypeVar("T")
 def generate_chunks(list_to_chunk: list[T], chunk_size: int) -> Iterable[list[T]]:
     for i in range(0, len(list_to_chunk), chunk_size):
         yield list_to_chunk[i : i + chunk_size]
+
+
+def parse_timestamp(timestamp: str) -> float:
+    """Parse a timestamp of format hh:mm:ss.cc and return a float.
+
+    :param timestamp: timestamp of format hh:mm:ss.cc
+    :return: timestamp as a float
+    """
+    hours, minutes, seconds = timestamp.split(":")
+    return float(hours) * 60 * 60 + float(minutes) * 60 + float(seconds)
+
+
+class NarratedActionClipSampler(ClipSampler):
+    def __init__(self, random: bool) -> None:
+        """The vast majority of narrated actions are 8 seconds long, and none
+        are longer.
+
+        So let's just sample 8-second clips.
+
+        :param random: whether to return random clips or not
+        """
+        super().__init__(8)
+        self.random = random
+        self.sample_clip_indices: list[int] | None = None
+
+    def __call__(
+        self,
+        last_clip_time: float | Fraction,
+        video_duration: float | Fraction,
+        annotation: dict[str, Any],
+    ) -> ClipInfo:
+        """Draw a random clip for a narrated action.
+
+        :param last_clip_time: unused
+        :param video_duration: duration of the video
+        :param annotation: narrated action data.
+            See https://ego4d-data.org/docs/data/annotations-schemas/ for more details.
+        """
+        if self.sample_clip_indices is None:
+            # first time sampling from this video, so create a clip index list
+            self.sample_clip_indices = list(range(len(annotation["narrated_actions"])))
+            if self.random:
+                # shuffle them if random
+                random.shuffle(self.sample_clip_indices)
+
+        clip_index = self.sample_clip_indices[self._current_clip_index]
+        narrated_action = annotation["narrated_actions"][clip_index]
+        self._current_clip_index += 1
+
+        is_last_clip = False
+        if self._current_clip_index == len(self.sample_clip_indices):
+            is_last_clip = True
+
+        # sample a clip 8 seconds around narration_time_sec
+        # if narration_time_sec is less than 4 seconds, we start from 0
+        clip_start_sec = max(
+            Fraction(narrated_action["narration_timestamp_sec"])
+            - self._clip_duration / 2,
+            0,
+        )
+
+        # add 8 seconds to clip_start_sec
+        # if clip_end_sec goes over the video duration, adjust clip_start_sec
+        clip_end_sec = clip_start_sec + self._clip_duration
+        if clip_end_sec > video_duration:
+            clip_end_sec = video_duration
+            clip_start_sec = clip_end_sec - self._clip_duration
+
+        if is_last_clip:
+            self.reset()
+
+        return ClipInfo(
+            clip_start_sec,
+            clip_end_sec,
+            clip_index,
+            0,
+            is_last_clip,
+        )
+
+    def reset(self) -> None:
+        self._current_clip_index = 0
+        self.sample_clip_indices = None
