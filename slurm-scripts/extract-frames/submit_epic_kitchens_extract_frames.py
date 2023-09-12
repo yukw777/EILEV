@@ -10,9 +10,9 @@ parser.add_argument("--email", required=True)
 parser.add_argument("--job_name", required=True)
 parser.add_argument("--model", required=True)
 parser.add_argument("--split", required=True)
-parser.add_argument("--fho_main_path", required=True)
-parser.add_argument("--split_path", required=True)
-parser.add_argument("--video_dir", required=True)
+parser.add_argument("--annotation_path", required=True)
+parser.add_argument("--epic_kitchens_55_video_dir_path", required=True)
+parser.add_argument("--epic_kitchens_100_video_dir_path", required=True)
 parser.add_argument("--frames_dir", required=True)
 parser.add_argument("--subsample_frames", type=int, required=True)
 parser.add_argument("--num_workers", type=int, required=True)
@@ -40,11 +40,11 @@ script = rf"""#!/bin/bash
 
 module load python/3.10.4
 {transformers_cache}
-poetry run python ../../scripts/ego4d/extract_frames.py \
-    --fho_main_path {args.fho_main_path} \
-    --split_path {os.path.join(args.split_path, f'fho_main_{args.split}.json')} \
-    --video_dir {args.video_dir} \
-    --frames_dir {os.path.join(args.frames_dir, f'fho_main_{args.split}-{args.job_name}-subsample-{args.subsample_frames}')} \
+poetry run python ../../scripts/epic-kitchens/epic_kitchens_extract_frames.py \
+    --annotation_path {args.annotation_path} \
+    --epic_kitchens_55_video_dir_path {args.epic_kitchens_55_video_dir_path} \
+    --epic_kitchens_100_video_dir_path {args.epic_kitchens_100_video_dir_path} \
+    --frames_dir {os.path.join(args.frames_dir, f'{args.split}-{args.job_name}-subsample-{args.subsample_frames}')} \
     --model_name_or_path {args.model} \
     --num_subsample_frames {args.subsample_frames} \
     --num_workers {args.num_workers}
