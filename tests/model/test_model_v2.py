@@ -195,7 +195,11 @@ def test_v2_video_blip_for_cond_gen(
         {"num_beams": 1, "do_sample": True},  # multinomial sampling
         {"num_beams": 2, "do_sample": False},  # beam-search decoding
         {"num_beams": 2, "do_sample": True},  # beam-search multinomial sampling
-        {"num_beams": 2, "num_beam_groups": 2},  # diverse beam-search decoding
+        {
+            "num_beams": 2,
+            "num_beam_groups": 2,
+            "diversity_penalty": 0.1,
+        },  # diverse beam-search decoding
     ],
 )
 @pytest.mark.parametrize("seq_len", [16, 32])
