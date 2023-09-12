@@ -38,7 +38,7 @@ class NarratedActionClipSampler(ClipSampler):
         """Draw a random clip for a narrated action.
 
         :param last_clip_time: unused
-        :param video_duration: unused
+        :param video_duration: duration of the video
         :param annotation: narrated action data.
             See https://ego4d-data.org/docs/data/annotations-schemas/ for more details.
         """
@@ -68,9 +68,8 @@ class NarratedActionClipSampler(ClipSampler):
         # add 8 seconds to clip_start_sec
         # if clip_end_sec goes over the video duration, adjust clip_start_sec
         clip_end_sec = clip_start_sec + self._clip_duration
-        video_duration_sec = Fraction(annotation["video_metadata"]["duration_sec"])
-        if clip_end_sec > video_duration_sec:
-            clip_end_sec = video_duration_sec
+        if clip_end_sec > video_duration:
+            clip_end_sec = video_duration
             clip_start_sec = clip_end_sec - self._clip_duration
 
         if is_last_clip:
