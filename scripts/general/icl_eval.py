@@ -12,7 +12,7 @@ from torchmetrics.classification import MulticlassF1Score
 from tqdm import tqdm
 from transformers import Blip2Processor
 
-from video_blip.data.ego4d import Ego4dFHOMainFrameDataset
+from video_blip.data.frame import FrameDataset
 from video_blip.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
     clean_narration_text,
@@ -55,9 +55,9 @@ def load_narrated_action_verb_noun(fho_main_path: str) -> dict[str, dict[str, st
 
 def add_and_filter_verb_noun(
     narrated_action_verb_noun: dict[str, dict[str, str]],
-    dataset: Ego4dFHOMainFrameDataset,
+    dataset: FrameDataset,
     num_eval_datapoints: int,
-) -> Ego4dFHOMainFrameDataset:
+) -> FrameDataset:
     # if not in narrated_action_verb_noun, it's been filtered
     filtered_data = [
         datapoint
@@ -152,8 +152,8 @@ class Preprocessor:
 
 
 def eval(
-    eval_dataset: Ego4dFHOMainFrameDataset,
-    train_dataset: Ego4dFHOMainFrameDataset,
+    eval_dataset: FrameDataset,
+    train_dataset: FrameDataset,
     num_shot: int,
     num_dataloader_workers: int,
     num_few_shot_dataloader_workers: int,
@@ -394,12 +394,12 @@ if __name__ == "__main__":
     narrated_action_verb_noun = load_narrated_action_verb_noun(args.fho_main)
     train_dataset = add_and_filter_verb_noun(
         narrated_action_verb_noun,
-        Ego4dFHOMainFrameDataset(args.train_narrated_actions_dir),
+        FrameDataset(args.train_narrated_actions_dir),
         0,
     )
     eval_dataset = add_and_filter_verb_noun(
         narrated_action_verb_noun,
-        Ego4dFHOMainFrameDataset(args.eval_narrated_actions_dir),
+        FrameDataset(args.eval_narrated_actions_dir),
         args.num_eval_datapoints,
     )
 

@@ -9,7 +9,7 @@ from pytorchvideo.transforms import UniformTemporalSubsample
 from torchvision.transforms import Compose
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
-from video_blip.data.ego4d import Ego4dFHOMainFrameDataset
+from video_blip.data.frame import FrameDataset
 from video_blip.data.utils import (
     DataCollatorForVideoSeq2Seq,
     clean_narration_text,
@@ -85,7 +85,7 @@ def train() -> None:
     # frozen.
     model.enable_input_require_grads()
 
-    train_data = Ego4dFHOMainFrameDataset(
+    train_data = FrameDataset(
         data_args.train_narrated_actions_dir,
         transform=partial(
             preprocess,
@@ -96,7 +96,7 @@ def train() -> None:
             ),
         ),
     )
-    val_data = Ego4dFHOMainFrameDataset(
+    val_data = FrameDataset(
         data_args.val_narrated_actions_dir,
         transform=partial(
             preprocess,

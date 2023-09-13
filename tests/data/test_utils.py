@@ -879,7 +879,7 @@ def reverse(x: list[int]) -> None:
     x.reverse()
 
 
-@patch("video_blip.data.ego4d.random.shuffle", new=reverse)
+@patch("video_blip.data.frame.random.shuffle", new=reverse)
 def test_narrated_action_clip_sampler_random() -> None:
     clip_sampler = NarratedActionClipSampler(True)
     video_duration_1 = 12

@@ -97,7 +97,7 @@ export WANDB_PROJECT={args.wandb_project}
 RDZV_ID=$RANDOM
 MASTER_NODE=$(srun --nodes=1 --ntasks=1 hostname)
 srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes={args.num_gpus} --nproc_per_node=1 --rdzv-id=$RDZV_ID --rdzv-backend=c10d --rdzv-endpoint=$MASTER_NODE \
-    ../../scripts/ego4d/train_v2.py \
+    ../../scripts/general/train_v2.py \
     --model_name_or_path {args.model} \
     --num_subsample_frames 8 \
     --train_num_in_context_examples_per_sample {args.train_num_in_context_examples_per_sample} \

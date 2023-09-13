@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import Blip2Processor
 
-from video_blip.data.ego4d import Ego4dFHOMainFrameInterleavedDataset
+from video_blip.data.frame import FrameInterleavedDataset
 from video_blip.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
     clean_narration_text,
@@ -211,7 +211,7 @@ if __name__ == "__main__":
 
     # in order to support batch generation, we need to pad on the left side
     processor = Blip2Processor.from_pretrained(args.processor, padding_side="left")
-    eval_dataset = Ego4dFHOMainFrameInterleavedDataset(
+    eval_dataset = FrameInterleavedDataset(
         args.eval_narrated_actions_dir,
         in_context_example_narrated_actions_dir=args.train_narrated_actions_dir,
         num_in_context_examples_per_sample=args.num_shot,

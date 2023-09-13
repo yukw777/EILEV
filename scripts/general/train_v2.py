@@ -18,7 +18,7 @@ from torchvision.transforms.functional import InterpolationMode
 from transformers import PreTrainedTokenizer
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
-from video_blip.data.ego4d import Ego4dFHOMainFrameInterleavedDataset
+from video_blip.data.frame import FrameInterleavedDataset
 from video_blip.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
     clean_narration_text,
@@ -125,7 +125,7 @@ def train() -> None:
     # frozen.
     model.enable_input_require_grads()
 
-    train_data = Ego4dFHOMainFrameInterleavedDataset(
+    train_data = FrameInterleavedDataset(
         data_args.train_narrated_actions_dir,
         num_in_context_examples_per_sample=data_args.train_num_in_context_examples_per_sample,  # noqa: E501
         verb_noun_ratio=data_args.verb_noun_ratio,
@@ -160,7 +160,7 @@ def train() -> None:
             ),
         ),
     )
-    val_data = Ego4dFHOMainFrameInterleavedDataset(
+    val_data = FrameInterleavedDataset(
         data_args.val_narrated_actions_dir,
         num_in_context_examples_per_sample=data_args.val_num_in_context_examples_per_sample,  # noqa: E501
         verb_noun_ratio=data_args.verb_noun_ratio,
