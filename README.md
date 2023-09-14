@@ -140,6 +140,30 @@ python scripts/ego4d/train_v1.py \
     --logging_steps 10
 ```
 
+## Errors for EPIC-KITCHENS Videos
+
+While extracting frames, you may encounter the following error on some of the EPIC-KITCHENS videos.:
+
+```
+Invalid NAL unit size (1053738930 > 11544).
+missing picture in access unit with size 11548
+Invalid NAL unit size (1053738930 > 11544).
+Error splitting the input into NAL units.
+```
+
+This is most likely due to the variable frame rate of some of the videos under low light conditions as described [here](https://github.com/epic-kitchens/epic-kitchens-55-annotations#video-information). The solution is to re-encode them at a constant frame rate by running the following command:
+
+```
+ffmpeg -i input_video.MP4 -c:v libx264 -crf 23 -preset medium -r 60 -c:a copy output_video_60fps.MP4
+```
+
+The following videos have been re-encoded:
+
+```
+P29_05.MP4
+P30_08.MP4
+```
+
 ## Citing VideoBLIP
 
 Please refer to [CITATION.cff](CITATION.cff), or click the "Cite this repository" button on GitHub.
