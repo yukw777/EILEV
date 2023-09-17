@@ -21,11 +21,12 @@ with open(args.extracted_narrated_actions_annotation, newline="") as f:
 for video_uid in original_annotation:
     if len(original_annotation[video_uid]) != len(extracted_annotation[video_uid]):
         print(f"{video_uid}")
+        i = -1
         for i in range(len(extracted_annotation[video_uid])):
             if (
                 extracted_annotation[video_uid][i]["narration_text"]
                 != original_annotation[video_uid][i]["full_sent_narration"]
             ):
                 print(f"Difference at index {i}:")
-        if i != len(original_annotation[video_uid]):
+        if i == -1 or i != len(original_annotation[video_uid]):
             print(f"Extracted shorter than original: {i}")
