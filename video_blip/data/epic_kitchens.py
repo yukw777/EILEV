@@ -31,14 +31,6 @@ class EpicKitchensDataset(LabeledVideoDataset):
         :param random_clip: whether to sample clips randomly
         """
         self.annotation_path = annotation_path
-        if "train" in self.annotation_path:
-            self.split = "train"
-        elif "validation" in self.annotation_path:
-            # The test split of EPIC-KITCHENS is not annotated,
-            # and the validation split is actually the test split in the dataset.
-            self.split = "test"
-        else:
-            raise ValueError(f"Unable to identify split from {self.annotation_path}")
         self.epic_kitchens_55_video_dir_path = epic_kitchen_55_video_dir_path
         self.epic_kitchens_100_video_dir_path = epic_kitchen_100_video_dir_path
 
@@ -74,13 +66,27 @@ class EpicKitchensDataset(LabeledVideoDataset):
                 )
             else:
                 # EPIC-KITCHENS-55 video
+                # The EPIC-KITCHENS-100 annotation doesn't follow the original splits
+                # from EPIC-KITCHENS-55, so the video may be in the "train" directory
+                # or "test" directory.
+                # First check if it's in "train"
                 video_path = os.path.join(
                     self.epic_kitchens_55_video_dir_path,
-                    "videos",
-                    self.split,
+                    "videos/train",
                     participant_id,
                     video_id + ".MP4",
                 )
+                if not os.path.exists(video_path):
+                    # now check if it's in "test"
+                    video_path = os.path.join(
+                        self.epic_kitchens_55_video_dir_path,
+                        "videos/test",
+                        participant_id,
+                        video_id + ".MP4",
+                    )
+                    if not os.path.exists(video_path):
+                        # we can't find the video so raise an exception
+                        raise Exception(f"Video file {video_id}.MP4 not found.")
 
             labeled_video_paths.append(
                 (video_path, {"narrated_actions": narration_data})
