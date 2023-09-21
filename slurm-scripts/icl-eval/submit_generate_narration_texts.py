@@ -53,7 +53,7 @@ script = rf"""#!/bin/bash
 
 module load python/3.10.4 cuda
 {transformers_cache}
-export WANDB_NAME={args.job_name_prefix}-generate-narration-texts-{args.num_shot}-shot
+export WANDB_NAME={args.job_name_prefix}-{args.num_shot}-shot
 {single_gpu if args.num_gpus < 2 else multi_gpu}
   --model {args.model} \
   --num_dataloader_workers {args.num_dataloader_workers} \
