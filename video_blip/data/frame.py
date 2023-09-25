@@ -16,13 +16,19 @@ class FrameDataset(Dataset[dict[str, Any]]):
         narrated_actions_dir: str,
         transform: Callable[[dict[str, Any]], Any] | None = None,
         data_filter: Callable[[dict[str, Any]], bool] | None = None,
+        return_frames: bool = True,
     ) -> None:
         """
         :param narrated_actions_dir: path to dir that contains narrated_actions.csv
             and extracted frames
+        :param transform: transform function to be called for each datapoint
+        :param data_filter: function to be used to filter datapoints
+        :param return_frames: whether to return frame data for each datapoint or not
         """
         self.narrated_actions_dir = narrated_actions_dir
+        self.return_frames = return_frames
         self.data: list[dict] = []
+        self.dict_data: dict[str, dict] = {}
         with open(
             os.path.join(self.narrated_actions_dir, "narrated_actions.csv"), newline=""
         ) as csvfile:
@@ -31,19 +37,27 @@ class FrameDataset(Dataset[dict[str, Any]]):
                 if data_filter is not None and not data_filter(row):
                     continue
                 self.data.append(row)
+                self.dict_data[row["frame_path"]] = row
 
         self._video_path_handler = VideoPathHandler()
         self._transform = transform
 
-    def __getitem__(self, index: int) -> dict[str, Any]:
-        datapoint = self.data[index]
-        video = self._video_path_handler.video_from_path(
-            os.path.join(self.narrated_actions_dir, datapoint["frame_path"])
-        )
-        # just get the whole video since the clip is already extracted
-        clip = video.get_clip(0, video.duration)
+    def __getitem__(self, index: int | str) -> dict[str, Any]:
+        if isinstance(index, int):
+            datapoint = self.data[index]
+        else:
+            datapoint = self.dict_data[index]
+        item = {**datapoint}
+        if self.return_frames:
+            video = self._video_path_handler.video_from_path(
+                os.path.join(self.narrated_actions_dir, datapoint["frame_path"])
+            )
+            # just get the whole video since the clip is already extracted
+            clip = video.get_clip(0, video.duration)
 
-        item = {"video": clip["video"].to(torch.uint8), **datapoint}
+            # pytorch video returns pixels as float by default, which causes
+            # problems downstream, so let's convert them to uint8.
+            item["video"] = clip["video"].to(torch.uint8)
 
         if self._transform is not None:
             item = self._transform(item)
@@ -61,10 +75,23 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
         num_in_context_examples_per_sample: int = 4,
         verb_noun_ratio: float = 0.5,
         transform: Callable[[dict], Any] | None = None,
+        return_frames: bool = True,
     ) -> None:
+        """
+        :param narrated_actions_dir: path to dir that contains narrated_actions.csv
+            and extracted frames
+        :param in_context_example_narrated_actions_dir: path to dir that contains
+            narrated_actions.csv and extracted frames for in-context examples
+        :param num_in_context_examples_per_sample: number of in-context examples to
+            sample pere datapoint
+        :param verb_noun_ratio: target verb/noun ratio for in-context examples
+        :param transform: transform function to be called for each datapoint
+        :param return_frames: whether to return frame data for each datapoint or not
+        """
         self.num_in_context_examples_per_sample = num_in_context_examples_per_sample
         self.verb_noun_ratio = verb_noun_ratio
-        self._dataset = FrameDataset(narrated_actions_dir)
+        self.return_frames = return_frames
+        self._dataset = FrameDataset(narrated_actions_dir, return_frames=return_frames)
         self.in_context_example_narrated_actions_dir = (
             in_context_example_narrated_actions_dir
         )
@@ -72,7 +99,7 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
             self._in_context_dataset = self._dataset
         else:
             self._in_context_dataset = FrameDataset(
-                in_context_example_narrated_actions_dir
+                in_context_example_narrated_actions_dir, return_frames=return_frames
             )
 
         # put datapoints into buckets based on their structured verbs and nouns

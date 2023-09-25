@@ -712,7 +712,7 @@ def test_ego4d_fho_main_frame_interleaved_dataset_in_context_dataset(
             }
         )
 
-        def mock_parent_dataset_init(path):
+        def mock_parent_dataset_init(path, **kwargs):
             if path == "data":
                 return mock_parent_dataset_instance
             return mock_in_context_dataset_instance
