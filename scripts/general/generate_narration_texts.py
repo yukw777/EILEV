@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import Blip2Processor
 
-from video_blip.data.frame import FrameInterleavedDataset
+from video_blip.data.frame import FrameInterleavedPresampledDataset
 from video_blip.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
     clean_narration_text,
@@ -25,6 +25,9 @@ from video_blip.model.v2 import VideoBlipForConditionalGeneration
 class DataCollator(DataCollatorForInterleavedVideoSeq2Seq):
     def __call__(self, features, return_tensors=None):
         narration_texts = [feature.pop("narration_text") for feature in features]
+        in_context_frame_paths = [
+            feature.pop("in_context_frame_paths") for feature in features
+        ]
         frame_paths = [feature.pop("frame_path") for feature in features]
         video_uids = [feature.pop("video_uid") for feature in features]
         clip_indexes = [feature.pop("clip_index") for feature in features]
@@ -32,6 +35,7 @@ class DataCollator(DataCollatorForInterleavedVideoSeq2Seq):
         collated = super().__call__(features, return_tensors)
 
         collated["narration_text"] = narration_texts
+        collated["in_context_frame_paths"] = in_context_frame_paths
         collated["frame_path"] = frame_paths
         collated["video_uid"] = video_uids
         collated["clip_index"] = clip_indexes
@@ -64,6 +68,9 @@ class Preprocessor:
         eval_item = datapoint["items"][-1]
         return {
             "narration_text": clean_narration_text(eval_item["narration_text"]),
+            "in_context_frame_paths": [
+                item["frame_path"] for item in datapoint["items"][:-1]
+            ],
             "frame_path": eval_item["frame_path"],
             "video_uid": eval_item["video_uid"],
             "clip_index": eval_item["clip_index"],
@@ -98,6 +105,7 @@ def eval(
                 "clip_index",
                 "generated",
                 "ground_truth",
+                "in_context_frame_paths",
             ]
         )
     else:
@@ -124,6 +132,7 @@ def eval(
             )
         ]
         frame_paths = gather_object(datapoint["frame_path"])
+        in_context_frame_paths = gather_object(datapoint["in_context_frame_paths"])
         video_uids = gather_object(datapoint["video_uid"])
         clip_indices = gather_object(datapoint["clip_index"])
         ground_truth_texts = gather_object(datapoint["narration_text"])
@@ -134,6 +143,9 @@ def eval(
             # we have some duplicates, so filter them out
             # this logic is from gather_for_metrics()
             frame_paths = frame_paths[: accelerator.gradient_state.remainder]
+            in_context_frame_paths = in_context_frame_paths[
+                : accelerator.gradient_state.remainder
+            ]
             video_uids = video_uids[: accelerator.gradient_state.remainder]
             clip_indices = clip_indices[: accelerator.gradient_state.remainder]
             ground_truth_texts = ground_truth_texts[
@@ -152,12 +164,14 @@ def eval(
                 clip_index,
                 generated_text,
                 ground_truth_text,
+                in_context_frame_path,
             ) in zip(
                 frame_paths,
                 video_uids,
                 clip_indices,
                 generated_texts,
                 ground_truth_texts,
+                in_context_frame_paths,
             ):
                 table.add_data(
                     frame_path,
@@ -165,6 +179,7 @@ def eval(
                     clip_index,
                     generated_text,
                     ground_truth_text,
+                    "/".join(in_context_frame_path),
                 )
     if table is not None:
         accelerator.log({"generated": table})
@@ -178,8 +193,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_dataloader_workers", default=0, type=int)
     parser.add_argument("--train_narrated_actions_dir", required=True)
     parser.add_argument("--eval_narrated_actions_dir", required=True)
-    parser.add_argument("--num_shot", required=True, type=int)
-    parser.add_argument("--verb_noun_ratio", required=True, type=float)
+    parser.add_argument("--in_context_query_map_file", required=True)
     parser.add_argument("--batch_size", default=1, type=int)
     parser.add_argument("--print_narration_texts", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=None, type=int)
@@ -211,11 +225,10 @@ if __name__ == "__main__":
 
     # in order to support batch generation, we need to pad on the left side
     processor = Blip2Processor.from_pretrained(args.processor, padding_side="left")
-    eval_dataset = FrameInterleavedDataset(
+    eval_dataset = FrameInterleavedPresampledDataset(
         args.eval_narrated_actions_dir,
-        in_context_example_narrated_actions_dir=args.train_narrated_actions_dir,
-        num_in_context_examples_per_sample=args.num_shot,
-        verb_noun_ratio=args.verb_noun_ratio,
+        args.in_context_query_map_file,
+        args.train_narrated_actions_dir,
         transform=Preprocessor(
             processor,
             model.config.num_query_tokens,
