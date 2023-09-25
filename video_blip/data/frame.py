@@ -1,3 +1,4 @@
+import json
 import os
 import random
 from collections import defaultdict
@@ -214,3 +215,40 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
 
     def __len__(self) -> int:
         return len(self._dataset)
+
+
+class FrameInterleavedPresampledDataset(Dataset[dict[str, Any]]):
+    def __init__(
+        self,
+        narrated_actions_dir: str,
+        in_context_query_map_file_path: str,
+        in_context_example_narrated_actions_dir: str,
+        transform: Callable[[dict], Any] | None = None,
+        return_frames: bool = True,
+    ) -> None:
+        self.return_frames = return_frames
+        self._transform = transform
+        self._dataset = FrameDataset(narrated_actions_dir, return_frames=return_frames)
+        self._in_context_dataset = FrameDataset(
+            in_context_example_narrated_actions_dir, return_frames=return_frames
+        )
+        self._in_context_query_map: list[dict[str, Any]] = []
+        with open(in_context_query_map_file_path) as f:
+            for line in f:
+                self._in_context_query_map.append(json.loads(line))
+
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        in_context_query = self._in_context_query_map[index]
+        item = {
+            "items": [
+                self._in_context_dataset[in_context_example]
+                for in_context_example in in_context_query["context"]
+            ]
+            + [self._dataset[in_context_query["query"]]]
+        }
+        if self._transform is not None:
+            item = self._transform(item)
+        return item
+
+    def __len__(self) -> int:
+        return len(self._in_context_query_map)
