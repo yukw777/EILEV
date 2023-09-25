@@ -95,12 +95,26 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
                 # filter out the current example if the in-context example
                 # dataset is the same as the main dataset
                 continue
+            if (
+                self._in_context_dataset.data[i]["structured_noun"]
+                == datapoint["structured_noun"]
+            ):
+                # if this in-context example candidate has the same verb and noun
+                # as the current example, skip it.
+                continue
             verb_bucket.add(i)
         noun_bucket: set[int] = set()
         for i in self.structured_noun_buckets.get(datapoint["structured_noun"], set()):
             if self.in_context_example_narrated_actions_dir is None and i == index:
                 # filter out the current example if the in-context example
                 # dataset is the same as the main dataset
+                continue
+            if (
+                self._in_context_dataset.data[i]["structured_verb"]
+                == datapoint["structured_verb"]
+            ):
+                # if this in-context example candidate has the same verb and noun
+                # as the current example, skip it.
                 continue
             noun_bucket.add(i)
 
@@ -146,6 +160,15 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
                     # filter out the current example if the in-context example
                     # dataset is the same as the main dataset or
                     # it's already been drawn.
+                    continue
+                if (
+                    self._in_context_dataset.data[i]["structured_verb"]
+                    == datapoint["structured_verb"]
+                    and self._in_context_dataset.data[i]["structured_noun"]
+                    == datapoint["structured_noun"]
+                ):
+                    # if this in-context example candidate has the same verb and noun
+                    # as the current example, skip it.
                     continue
                 rest.add(i)
             examples |= _sample(rest, num_additional_examples)
