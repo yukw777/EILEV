@@ -10,10 +10,9 @@ parser.add_argument("--num_gpus", required=True, type=int)
 parser.add_argument("--mem_per_gpu", required=True)
 parser.add_argument("--num_dataloader_workers", type=int, required=True)
 parser.add_argument("--batch_size", type=int, required=True)
-parser.add_argument("--num_shot", type=int, required=True)
-parser.add_argument("--verb_noun_ratio", type=float, required=True)
 parser.add_argument("--train_narrated_actions_dir", required=True)
 parser.add_argument("--eval_narrated_actions_dir", required=True)
+parser.add_argument("--in_context_query_map_file", required=True)
 parser.add_argument("--wandb_project", required=True)
 parser.add_argument("--job_name_prefix", required=True)
 parser.add_argument("--email")
@@ -59,9 +58,8 @@ export WANDB_NAME={args.job_name_prefix}-{args.num_shot}-shot
   --num_dataloader_workers {args.num_dataloader_workers} \
   --train_narrated_actions_dir {args.train_narrated_actions_dir} \
   --eval_narrated_actions_dir {args.eval_narrated_actions_dir} \
+  --in_context_query_map_file {args.in_context_query_map_file} \
   --batch_size {args.batch_size} \
-  --num_shot {args.num_shot} \
-  --verb_noun_ratio {args.verb_noun_ratio} \
   {gen_config} \
   --wandb_project {args.wandb_project}
 """  # noqa: E501
