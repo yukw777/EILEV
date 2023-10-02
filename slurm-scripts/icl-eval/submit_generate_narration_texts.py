@@ -1,4 +1,5 @@
 import argparse
+import os
 import subprocess
 
 parser = argparse.ArgumentParser()
@@ -37,6 +38,8 @@ srun --cpus-per-task {args.num_dataloader_workers} poetry run torchrun --nnodes=
 
 single_gpu = "poetry run python ../../scripts/general/generate_narration_texts.py \\"
 
+job_name = os.path.splitext(os.path.basename(args.in_context_query_map_file))[0]
+
 script = rf"""#!/bin/bash
 
 #SBATCH --partition={args.partition}
@@ -52,7 +55,7 @@ script = rf"""#!/bin/bash
 
 module load python/3.10.4 cuda
 {transformers_cache}
-export WANDB_NAME={args.job_name_prefix}-{args.num_shot}-shot
+export WANDB_NAME={args.job_name_prefix}-{job_name}
 {single_gpu if args.num_gpus < 2 else multi_gpu}
   --model {args.model} \
   --num_dataloader_workers {args.num_dataloader_workers} \
