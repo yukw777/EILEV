@@ -108,6 +108,8 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
         self.structured_noun_buckets: dict[str, set[int]] = defaultdict(set)
         for i, datapoint in enumerate(self._in_context_dataset.data):
             if datapoint["structured_verb"] not in {"", "[other]"}:
+                # NOTE: [other] is a catch-all verb in Ego4D. For these instances,
+                # we just sample from the whole dataset.
                 self.structured_verb_buckets[datapoint["structured_verb"]].add(i)
             if datapoint["structured_noun"] != "":
                 self.structured_noun_buckets[datapoint["structured_noun"]].add(i)
