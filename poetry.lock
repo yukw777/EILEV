@@ -6177,18 +6177,18 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.3)", "coverage-enable-subprocess
 
 [[package]]
 name = "wandb"
-version = "0.15.1"
-description = "A CLI and library for interacting with the Weights and Biases API."
+version = "0.15.12"
+description = "A CLI and library for interacting with the Weights & Biases API."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "wandb-0.15.1-py3-none-any.whl", hash = "sha256:0c49d3c5881ed6c4b0752ba6b069ecfed28df9459fb0f59fc93f1b6ceda94bcb"},
-    {file = "wandb-0.15.1.tar.gz", hash = "sha256:8e92574c01d3d1d4f879a33bb8af54f0dbfb07fc00b1e2ec1070ce31839c7b14"},
+    {file = "wandb-0.15.12-py3-none-any.whl", hash = "sha256:75c57b5bb8ddae21d45a02f644628585bdd112fea686de3177099a0996f1c41c"},
+    {file = "wandb-0.15.12.tar.gz", hash = "sha256:c344d92fb8044b072a6138afd9adc5d3801ad050cf11378fe2af2fe899dcca84"},
 ]
 
 [package.dependencies]
 appdirs = ">=1.4.3"
-Click = ">=7.0,<8.0.0 || >8.0.0"
+Click = ">=7.1,<8.0.0 || >8.0.0"
 docker-pycreds = ">=0.4.0"
 GitPython = ">=1.0.0,<3.1.29 || >3.1.29"
 pathtools = "*"
@@ -6205,11 +6205,12 @@ async = ["httpx (>=0.22.0)"]
 aws = ["boto3"]
 azure = ["azure-identity", "azure-storage-blob"]
 gcp = ["google-cloud-storage"]
-grpc = ["grpcio (>=1.27.2)"]
 kubeflow = ["google-cloud-storage", "kubernetes", "minio", "sh"]
-launch = ["awscli", "boto3", "botocore", "chardet", "google-auth", "google-cloud-artifact-registry", "google-cloud-compute", "google-cloud-storage", "iso8601", "kubernetes", "nbconvert", "nbformat", "typing-extensions"]
+launch = ["PyYAML (>=6.0.0)", "awscli", "azure-containerregistry", "azure-identity", "azure-storage-blob", "boto3", "botocore", "chardet", "google-auth", "google-cloud-artifact-registry", "google-cloud-compute", "google-cloud-storage", "iso8601", "kubernetes", "nbconvert", "nbformat", "optuna", "typing-extensions"]
 media = ["bokeh", "moviepy", "numpy", "pillow", "plotly", "rdkit-pypi", "soundfile"]
 models = ["cloudpickle"]
+nexus = ["wandb-core (>=0.16.0b1)"]
+perf = ["orjson"]
 sweeps = ["sweeps (>=0.2.0)"]
 
 [[package]]
