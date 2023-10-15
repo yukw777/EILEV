@@ -85,11 +85,13 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    train_narrated_actions_dir: str
-    val_narrated_actions_dir: str
+    train_frames_dir: str
+    val_frames_dir: str
     train_num_in_context_examples_per_sample: int
     val_num_in_context_examples_per_sample: int
     verb_noun_ratio: float
+    train_annotation_file: str = None  # type: ignore
+    val_annotation_file: str = None  # type: ignore
 
 
 @dataclass
@@ -126,7 +128,8 @@ def train() -> None:
     model.enable_input_require_grads()
 
     train_data = FrameInterleavedDataset(
-        data_args.train_narrated_actions_dir,
+        data_args.train_frames_dir,
+        annotation_file=data_args.train_annotation_file,
         num_in_context_examples_per_sample=data_args.train_num_in_context_examples_per_sample,  # noqa: E501
         verb_noun_ratio=data_args.verb_noun_ratio,
         transform=Preprocessor(
@@ -161,7 +164,10 @@ def train() -> None:
         ),
     )
     val_data = FrameInterleavedDataset(
-        data_args.val_narrated_actions_dir,
+        data_args.val_frames_dir,
+        annotation_file=data_args.val_annotation_file,
+        in_context_example_frames_dir=data_args.train_frames_dir,
+        in_context_example_annotation_file=data_args.train_annotation_file,
         num_in_context_examples_per_sample=data_args.val_num_in_context_examples_per_sample,  # noqa: E501
         verb_noun_ratio=data_args.verb_noun_ratio,
         transform=Preprocessor(
