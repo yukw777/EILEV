@@ -8,8 +8,10 @@ from tqdm import tqdm
 from video_blip.data.frame import FrameInterleavedDataset
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--train_narrated_actions_dir", required=True)
-parser.add_argument("--eval_narrated_actions_dir", required=True)
+parser.add_argument("--in_context_frames_dir", required=True)
+parser.add_argument("--in_context_annotation_file")
+parser.add_argument("--eval_frames_dir", required=True)
+parser.add_argument("--eval_annotation_file")
 parser.add_argument("--num_shot", required=True, type=int)
 parser.add_argument("--output_prefix", required=True)
 parser.add_argument("--verb_noun_ratio", required=True, type=float)
@@ -26,8 +28,10 @@ if args.log_to_wandb:
 random.seed(args.random_seed)
 
 dataset = FrameInterleavedDataset(
-    args.eval_narrated_actions_dir,
-    in_context_example_narrated_actions_dir=args.train_narrated_actions_dir,
+    args.eval_frames_dir,
+    annotation_file=args.eval_annotation_file,
+    in_context_example_frames_dir=args.in_context_frames_dir,
+    in_context_example_annotation_file=args.in_context_annotation_file,
     num_in_context_examples_per_sample=args.num_shot,
     verb_noun_ratio=args.verb_noun_ratio,
     return_frames=False,

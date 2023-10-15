@@ -1,9 +1,9 @@
 import json
-import os
 import random
 from collections import defaultdict
 from collections.abc import Callable
 from csv import DictReader
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -14,25 +14,32 @@ from torch.utils.data import Dataset
 class FrameDataset(Dataset[dict[str, Any]]):
     def __init__(
         self,
-        narrated_actions_dir: str,
+        frames_dir: str,
+        annotation_file: str | None = None,
         transform: Callable[[dict[str, Any]], Any] | None = None,
         data_filter: Callable[[dict[str, Any]], bool] | None = None,
         return_frames: bool = True,
     ) -> None:
         """
-        :param narrated_actions_dir: path to dir that contains narrated_actions.csv
-            and extracted frames
+        :param frames_dir: path to dir that contains extracted frames.
+            Optionally, this directory may contain narrated_actions.csv
+            for annotations.
+        :param annotation_file: path to annotation file. If frames_dir contains
+            narrated_actions.csv, this is optional.
         :param transform: transform function to be called for each datapoint
         :param data_filter: function to be used to filter datapoints
         :param return_frames: whether to return frame data for each datapoint or not
         """
-        self.narrated_actions_dir = narrated_actions_dir
+        self.frames_dir = Path(frames_dir)
         self.return_frames = return_frames
         self.data: list[dict] = []
         self.dict_data: dict[str, dict] = {}
-        with open(
-            os.path.join(self.narrated_actions_dir, "narrated_actions.csv"), newline=""
-        ) as csvfile:
+        if annotation_file is None:
+            self.annotation_file_path = self.frames_dir / "narrated_actions.csv"
+        else:
+            self.annotation_file_path = Path(annotation_file)
+        assert self.annotation_file_path.exists()
+        with open(self.annotation_file_path, newline="") as csvfile:
             csvreader = DictReader(csvfile)
             for row in csvreader:
                 if data_filter is not None and not data_filter(row):
@@ -51,7 +58,7 @@ class FrameDataset(Dataset[dict[str, Any]]):
         item = {**datapoint}
         if self.return_frames:
             video = self._video_path_handler.video_from_path(
-                os.path.join(self.narrated_actions_dir, datapoint["frame_path"])
+                self.frames_dir / datapoint["frame_path"]
             )
             # just get the whole video since the clip is already extracted
             clip = video.get_clip(0, video.duration)
@@ -71,18 +78,28 @@ class FrameDataset(Dataset[dict[str, Any]]):
 class FrameInterleavedDataset(Dataset[dict[str, Any]]):
     def __init__(
         self,
-        narrated_actions_dir: str,
-        in_context_example_narrated_actions_dir: str | None = None,
+        frames_dir: str,
+        annotation_file: str | None = None,
+        in_context_example_frames_dir: str | None = None,
+        in_context_example_annotation_file: str | None = None,
         num_in_context_examples_per_sample: int = 4,
         verb_noun_ratio: float = 0.5,
         transform: Callable[[dict], Any] | None = None,
         return_frames: bool = True,
     ) -> None:
         """
-        :param narrated_actions_dir: path to dir that contains narrated_actions.csv
-            and extracted frames
-        :param in_context_example_narrated_actions_dir: path to dir that contains
-            narrated_actions.csv and extracted frames for in-context examples
+        :param frames_dir: path to dir that contains extracted frames.
+            Optionally, this directory may contain narrated_actions.csv
+            for annotations.
+        :param annotation_file: path to annotation file. If frames_dir contains
+            narrated_actions.csv, this is optional.
+        :param in_context_example_frames_dir: path to dir that contains
+            extracted frames for in-context examples.
+            Optionally, this directory may contain narrated_actions.csv
+            for annotations.
+        :param in_context_example_annotation_file: path to annotation file for
+            in-context examples. If in_context_example_frames_dir contains
+            narrated_actions.csv, this is optional.
         :param num_in_context_examples_per_sample: number of in-context examples to
             sample pere datapoint
         :param verb_noun_ratio: target verb/noun ratio for in-context examples
@@ -92,15 +109,20 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
         self.num_in_context_examples_per_sample = num_in_context_examples_per_sample
         self.verb_noun_ratio = verb_noun_ratio
         self.return_frames = return_frames
-        self._dataset = FrameDataset(narrated_actions_dir, return_frames=return_frames)
-        self.in_context_example_narrated_actions_dir = (
-            in_context_example_narrated_actions_dir
+        self._dataset = FrameDataset(
+            frames_dir=frames_dir,
+            annotation_file=annotation_file,
+            return_frames=return_frames,
         )
-        if in_context_example_narrated_actions_dir is None:
+        if in_context_example_frames_dir is None:
+            self.in_context_examples_from_main_dataset = True
             self._in_context_dataset = self._dataset
         else:
+            self.in_context_examples_from_main_dataset = False
             self._in_context_dataset = FrameDataset(
-                in_context_example_narrated_actions_dir, return_frames=return_frames
+                in_context_example_frames_dir,
+                annotation_file=in_context_example_annotation_file,
+                return_frames=return_frames,
             )
 
         # put datapoints into buckets based on their structured verbs and nouns
@@ -121,7 +143,7 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
 
         verb_bucket: set[int] = set()
         for i in self.structured_verb_buckets.get(datapoint["structured_verb"], set()):
-            if self.in_context_example_narrated_actions_dir is None and i == index:
+            if self.in_context_examples_from_main_dataset and i == index:
                 # filter out the current example if the in-context example
                 # dataset is the same as the main dataset
                 continue
@@ -135,7 +157,7 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
             verb_bucket.add(i)
         noun_bucket: set[int] = set()
         for i in self.structured_noun_buckets.get(datapoint["structured_noun"], set()):
-            if self.in_context_example_narrated_actions_dir is None and i == index:
+            if self.in_context_examples_from_main_dataset and i == index:
                 # filter out the current example if the in-context example
                 # dataset is the same as the main dataset
                 continue
@@ -184,9 +206,9 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
             # rest of the dataset
             rest: set[int] = set()
             for i in range(len(self._in_context_dataset)):
-                if (
-                    self.in_context_example_narrated_actions_dir is None and i == index
-                ) or (i in examples):
+                if (self.in_context_examples_from_main_dataset and i == index) or (
+                    i in examples
+                ):
                     # filter out the current example if the in-context example
                     # dataset is the same as the main dataset or
                     # it's already been drawn.
@@ -222,17 +244,23 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
 class FrameInterleavedPresampledDataset(Dataset[dict[str, Any]]):
     def __init__(
         self,
-        narrated_actions_dir: str,
+        frames_dir: str,
         in_context_query_map_file_path: str,
-        in_context_example_narrated_actions_dir: str,
+        in_context_example_frames_dir: str,
+        annotation_file: str | None = None,
+        in_context_example_annotation_file: str | None = None,
         transform: Callable[[dict], Any] | None = None,
         return_frames: bool = True,
     ) -> None:
         self.return_frames = return_frames
         self._transform = transform
-        self._dataset = FrameDataset(narrated_actions_dir, return_frames=return_frames)
+        self._dataset = FrameDataset(
+            frames_dir, annotation_file=annotation_file, return_frames=return_frames
+        )
         self._in_context_dataset = FrameDataset(
-            in_context_example_narrated_actions_dir, return_frames=return_frames
+            in_context_example_frames_dir,
+            annotation_file=in_context_example_annotation_file,
+            return_frames=return_frames,
         )
         self._in_context_query_map: list[dict[str, Any]] = []
         with open(in_context_query_map_file_path) as f:
