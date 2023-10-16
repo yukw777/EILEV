@@ -11,8 +11,10 @@ parser.add_argument("--run_name", required=True)
 parser.add_argument("--num_gpus", required=True, type=int)
 parser.add_argument("--mem_per_gpu", required=True)
 parser.add_argument("--time", required=True)
-parser.add_argument("--train_narrated_actions_dir", required=True)
-parser.add_argument("--val_narrated_actions_dir", required=True)
+parser.add_argument("--train_frames_dir", required=True)
+parser.add_argument("--train_annotation_file")
+parser.add_argument("--val_frames_dir", required=True)
+parser.add_argument("--val_annotation_file")
 parser.add_argument("--output_dir", required=True)
 parser.add_argument(
     "--train_num_in_context_examples_per_sample", type=int, required=True
@@ -78,6 +80,14 @@ gradient_accumulation_steps = (
 
 output_dir = os.path.join(args.output_dir, args.run_name)
 
+train_annotation_file = ""
+if args.train_annotation_file is not None:
+    train_annotation_file = f"--train_annotation_file {args.train_annotation_file}"
+
+val_annotation_file = ""
+if args.val_annotation_file is not None:
+    val_annotation_file = f"--val_annotation_file {args.val_annotation_file}"
+
 script = rf"""#!/bin/bash
 
 #SBATCH --partition={args.partition}
@@ -103,8 +113,10 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     --train_num_in_context_examples_per_sample {args.train_num_in_context_examples_per_sample} \
     --val_num_in_context_examples_per_sample {args.val_num_in_context_examples_per_sample} \
     --verb_noun_ratio {args.verb_noun_ratio} \
-    --train_narrated_actions_dir {args.train_narrated_actions_dir} \
-    --val_narrated_actions_dir {args.val_narrated_actions_dir} \
+    --train_frames_dir {args.train_frames_dir} \
+    {train_annotation_file} \
+    --val_frames_dir {args.val_frames_dir} \
+    {val_annotation_file} \
     --output_dir {output_dir} \
     --num_train_epochs {args.num_train_epochs} \
     --warmup_steps {args.warmup_steps} \
