@@ -16,7 +16,7 @@ from pytorchvideo.transforms import (
 from torchvision.transforms import Compose, RandomHorizontalFlip, Resize
 from torchvision.transforms.functional import InterpolationMode
 from transformers import PreTrainedTokenizer
-from transformers.deepspeed import is_deepspeed_zero3_enabled
+from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
 
 from video_blip.data.frame import FrameInterleavedDataset
 from video_blip.data.utils import (
