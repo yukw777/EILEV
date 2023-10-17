@@ -191,9 +191,11 @@ if __name__ == "__main__":
     parser.add_argument("--processor", default=None)
     parser.add_argument("--dtype", choices=["fp32", "fp16", "bfloat16"], default="fp32")
     parser.add_argument("--num_dataloader_workers", default=0, type=int)
-    parser.add_argument("--train_narrated_actions_dir", required=True)
-    parser.add_argument("--eval_narrated_actions_dir", required=True)
+    parser.add_argument("--eval_frames_dir", required=True)
+    parser.add_argument("--eval_annotation_file")
     parser.add_argument("--in_context_query_map_file", required=True)
+    parser.add_argument("--in_context_example_frames_dir", required=True)
+    parser.add_argument("--in_context_example_annotation_file")
     parser.add_argument("--batch_size", default=1, type=int)
     parser.add_argument("--print_narration_texts", action="store_true")
     parser.add_argument("--num_eval_datapoints", default=None, type=int)
@@ -226,9 +228,11 @@ if __name__ == "__main__":
     # in order to support batch generation, we need to pad on the left side
     processor = Blip2Processor.from_pretrained(args.processor, padding_side="left")
     eval_dataset = FrameInterleavedPresampledDataset(
-        args.eval_narrated_actions_dir,
+        args.eval_frames_dir,
         args.in_context_query_map_file,
-        args.train_narrated_actions_dir,
+        args.in_context_example_frames_dir,
+        annotation_file=args.eval_annaotation_file,
+        in_context_example_annotation_file=args.in_context_example_annotation_file,
         transform=Preprocessor(
             processor,
             model.config.num_query_tokens,
