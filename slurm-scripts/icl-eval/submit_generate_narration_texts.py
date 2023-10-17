@@ -41,13 +41,17 @@ srun --cpus-per-task {args.num_dataloader_workers} poetry run torchrun --nnodes=
 
 single_gpu = "poetry run python ../../scripts/general/generate_narration_texts.py \\"
 
-job_name = os.path.splitext(os.path.basename(args.in_context_query_map_file))[0]
+job_name = (
+    args.job_name_prefix
+    + "-"
+    + os.path.splitext(os.path.basename(args.in_context_query_map_file))[0]
+)
 
 script = rf"""#!/bin/bash
 
 #SBATCH --partition={args.partition}
 #SBATCH --time={args.time}
-#SBATCH --job-name={args.job_name_prefix}-generate-narration-texts
+#SBATCH --job-name=generate-narration-texts-{job_name}
 {email}
 #SBATCH --account={args.account}
 #SBATCH --ntasks={args.num_gpus}
@@ -58,7 +62,7 @@ script = rf"""#!/bin/bash
 
 module load python/3.10.4 cuda
 {transformers_cache}
-export WANDB_NAME={args.job_name_prefix}-{job_name}
+export WANDB_NAME={job_name}
 {single_gpu if args.num_gpus < 2 else multi_gpu}
     --model {args.model} \
     --num_dataloader_workers {args.num_dataloader_workers} \
