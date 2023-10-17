@@ -231,7 +231,7 @@ if __name__ == "__main__":
         args.eval_frames_dir,
         args.in_context_query_map_file,
         args.in_context_example_frames_dir,
-        annotation_file=args.eval_annaotation_file,
+        annotation_file=args.eval_annotation_file,
         in_context_example_annotation_file=args.in_context_example_annotation_file,
         transform=Preprocessor(
             processor,
