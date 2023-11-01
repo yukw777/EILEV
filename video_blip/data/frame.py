@@ -251,8 +251,32 @@ class FrameInterleavedPresampledDataset(Dataset[dict[str, Any]]):
         in_context_example_annotation_file: str | None = None,
         transform: Callable[[dict], Any] | None = None,
         return_frames: bool = True,
+        shuffle_in_context_example_frames: bool = False,
     ) -> None:
+        """
+        :param frames_dir: path to dir that contains extracted frames.
+            Optionally, this directory may contain narrated_actions.csv
+            for annotations.
+        :param in_context_query_map_file_path: path to file that specifies
+            the mapping between in-context examples and queries.
+        :param in_context_example_frames_dir: path to dir that contains
+            extracted frames for in-context examples.
+            Optionally, this directory may contain narrated_actions.csv
+            for annotations.
+        :param annotation_file: path to annotation file. If frames_dir contains
+            narrated_actions.csv, this is optional.
+        :param in_context_example_annotation_file: path to annotation file for
+            in-context examples. If in_context_example_frames_dir contains
+            narrated_actions.csv, this is optional.
+        :param transform: transform function to be called for each datapoint
+        :param return_frames: whether to return frame data for each datapoint or not
+        :param shuffle_in_context_example_frames: shuffle video frames of in-context
+            examples. This option actually generates "permutations with no fixed points"
+            or "derangements" (https://en.wikipedia.org/wiki/Derangement).
+            Useful for ablation studies.
+        """
         self.return_frames = return_frames
+        self.shuffle_in_context_example_frames = shuffle_in_context_example_frames
         self._transform = transform
         self._dataset = FrameDataset(
             frames_dir, annotation_file=annotation_file, return_frames=return_frames
@@ -269,12 +293,38 @@ class FrameInterleavedPresampledDataset(Dataset[dict[str, Any]]):
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         in_context_query = self._in_context_query_map[index]
-        item = {
-            "items": [
-                self._in_context_dataset[in_context_example]
-                for in_context_example in in_context_query["context"]
+        in_context_examples = [
+            self._in_context_dataset[in_context_example]
+            for in_context_example in in_context_query["context"]
+        ]
+        if self.shuffle_in_context_example_frames:
+            video_idx = list(range(len(in_context_examples)))
+            shuffled_video_idx = video_idx[:]
+            while True:
+                # we basically shuffle until no videos are in their original positions
+                # The probability that a random permutation is a derangement is
+                # approximately 1/e no matter how long the list is. As a result,
+                # the expected number of necessary shuffles is about 3, and it rarely
+                # goes over more then ten.
+                # https://stackoverflow.com/questions/15512058/python-shuffle-such-that-position-will-never-repeat/
+                random.shuffle(shuffled_video_idx)
+                for a, b in zip(video_idx, shuffled_video_idx):
+                    if a == b:
+                        break
+                else:
+                    # this else clause is only executed when we exit the for loop
+                    # "normally" without encountering a break statement.
+                    # https://docs.python.org/3/tutorial/controlflow.html#break-and-continue-statements-and-else-clauses-on-loops
+                    # we break out of the while loop here since we've found a
+                    # derangement.
+                    break
+            shuffled_videos = [
+                in_context_examples[idx]["video"] for idx in shuffled_video_idx
             ]
-            + [self._dataset[in_context_query["query"]]]
+            for example, frames in zip(in_context_examples, shuffled_videos):
+                example["video"] = frames
+        item = {
+            "items": in_context_examples + [self._dataset[in_context_query["query"]]]
         }
         if self._transform is not None:
             item = self._transform(item)
