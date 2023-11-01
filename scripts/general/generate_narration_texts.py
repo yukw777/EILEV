@@ -201,6 +201,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_eval_datapoints", default=None, type=int)
     parser.add_argument("--random_seed", type=int, default=42)
     parser.add_argument("--generation_config", default='{"max_new_tokens": 512}')
+    parser.add_argument("--shuffle_in_context_example_frames", action="store_true")
     parser.add_argument("--wandb_project")
     args = parser.parse_args()
 
@@ -239,6 +240,7 @@ if __name__ == "__main__":
             model.config.use_decoder_only_language_model,
             "Question: What is the camera wearer doing? Answer:",
         ),
+        shuffle_in_context_example_frames=args.shuffle_in_context_example_frames,
     )
     model, eval_dataloader = accelerator.prepare(
         model,

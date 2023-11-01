@@ -21,6 +21,7 @@ parser.add_argument("--job_name_prefix", required=True)
 parser.add_argument("--email")
 parser.add_argument("--generation_config")
 parser.add_argument("--transformers_cache")
+parser.add_argument("--shuffle_in_context_example_frames", action="store_true")
 parser.add_argument("--dry-run", action="store_true")
 args = parser.parse_args()
 
@@ -73,6 +74,7 @@ export WANDB_NAME={job_name}
     {f'--in_context_example_annotation_file {args.in_context_example_annotation_file}' if args.in_context_example_annotation_file is not None else ''} \
     --batch_size {args.batch_size} \
     {gen_config} \
+    {f'--shuffle_in_context_example_frames' if args.shuffle_in_context_example_frames else ''} \
     --wandb_project {args.wandb_project}
 """  # noqa: E501
 
