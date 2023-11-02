@@ -36,86 +36,86 @@ This folder contains simple Python scripts that generate SLURM scripts to run va
       - Time: 00-06:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 32
     - 1-shot
       - Time: 00-12:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 16
     - 2-shot
       - Time: 00-16:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 8
     - 4-shot
       - Time: 01-00:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 4
     - 8-shot
       - Time: 01-00:00:00
       - GPUs: 2xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 2
     - 12-shot
       - Time: 01-00:00:00
       - GPUs: 4xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 1
     - 16-shot
       - Time: 01-00:00:00
       - GPUs: 4xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 1
   - EPIC-KITCHENS 100
     - 0-shot
       - Time: 00-03:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 32
     - 1-shot
       - Time: 00-06:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 16
     - 2-shot
       - Time: 00-06:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 8
     - 4-shot
       - Time: 00-12:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 4
     - 8-shot
       - Time: 00-12:00:00
       - GPUs: 2xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 2
     - 12-shot
       - Time: 00-12:00:00
       - GPUs: 2xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 1
     - 16-shot
       - Time: 01-00:00:00
       - GPUs: 2xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 1
 
 - `blip2-flan-t5-xl` variants
@@ -125,84 +125,84 @@ This folder contains simple Python scripts that generate SLURM scripts to run va
       - Time: 00-06:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 32
     - 1-shot
       - Time: 00-12:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 32
     - 2-shot
       - Time: 00-12:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 16
     - 4-shot
       - Time: 01-00:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 16
     - 8-shot
       - Time: 01-00:00:00
       - GPUs: 2xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 4
     - 12-shot
-      - Time: 01-00:00:00
+      - Time: 00-12:00:00
       - GPUs: 4xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 2
     - 16-shot
       - Time: 01-00:00:00
       - GPUs: 4xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 2
   - EPIC-KITCHENS 100
     - 0-shot
       - Time: 00-03:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 32
     - 1-shot
       - Time: 00-06:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 32
     - 2-shot
       - Time: 00-06:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 16
     - 4-shot
       - Time: 00-12:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 16
     - 8-shot
       - Time: 00-16:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 8
     - 12-shot
       - Time: 01-00:00:00
       - GPUs: 1xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 8
     - 16-shot
       - Time: 00-16:00:00
       - GPUs: 2xA40
       - Memory per GPU: 24GB
-      - Number of dataloader workers: 1
+      - Number of dataloader workers: 2
       - Batch size: 2
