@@ -41,6 +41,7 @@ optional = true
 [tool.poetry.group.jupyter.dependencies]
 jupyter = "^1.0.0"
 matplotlib = "^3.7.1"
+seaborn = "^0.13.0"
 
 
 [tool.poetry.group.demo.dependencies]
