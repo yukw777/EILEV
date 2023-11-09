@@ -42,6 +42,7 @@ optional = true
 jupyter = "^1.0.0"
 matplotlib = "^3.7.1"
 seaborn = "^0.13.0"
+statsmodels = "^0.14.0"
 
 
 [tool.poetry.group.demo.dependencies]
