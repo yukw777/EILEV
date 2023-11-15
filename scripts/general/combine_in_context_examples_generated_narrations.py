@@ -62,7 +62,10 @@ with open(args.in_context_example_annotations, newline="") as f:
 
 # sanity check to make sure we have annotations for all in-context examples
 assert (
-    len(set(in_context_examples.keys()) - set(in_context_example_annotations.keys()))
+    len(
+        {ex for _, data in in_context_examples.items() for ex in data["context"]}
+        - set(in_context_example_annotations.keys())
+    )
     == 0
 )
 
