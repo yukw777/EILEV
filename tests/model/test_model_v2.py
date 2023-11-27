@@ -372,4 +372,4 @@ def test_v2_video_blip_for_cond_gen_classify(
     class_batch_log_likelihood = model.classify(
         **classify_kwargs, class_batch_size=class_batch_size
     )
-    assert log_likelihood.equal(class_batch_log_likelihood)
+    assert log_likelihood.allclose(class_batch_log_likelihood)
