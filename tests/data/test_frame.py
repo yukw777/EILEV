@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from video_blip.data.frame import FrameInterleavedDataset
+from eilev.data.frame import FrameInterleavedDataset
 
 
 @pytest.mark.parametrize(
@@ -547,9 +547,9 @@ from video_blip.data.frame import FrameInterleavedDataset
         ),
     ],
 )
-@patch("video_blip.data.frame.random.sample", new=lambda p, k: sorted(p)[:k])
+@patch("eilev.data.frame.random.sample", new=lambda p, k: sorted(p)[:k])
 def test_ego4d_fho_main_frame_interleaved_dataset(data, expected):
-    with patch("video_blip.data.frame.FrameDataset") as mock_parent_dataset:
+    with patch("eilev.data.frame.FrameDataset") as mock_parent_dataset:
         mock_parent_dataset_instance = Mock(data=data)
         mock_parent_dataset_instance.__len__ = Mock(return_value=len(data))
         mock_parent_dataset_instance.__getitem__ = Mock(
@@ -691,11 +691,11 @@ def test_ego4d_fho_main_frame_interleaved_dataset(data, expected):
         ),
     ],
 )
-@patch("video_blip.data.frame.random.sample", new=lambda p, k: sorted(p)[:k])
+@patch("eilev.data.frame.random.sample", new=lambda p, k: sorted(p)[:k])
 def test_ego4d_fho_main_frame_interleaved_dataset_in_context_dataset(
     data, in_context_data, expected
 ):
-    with patch("video_blip.data.frame.FrameDataset") as mock_parent_dataset:
+    with patch("eilev.data.frame.FrameDataset") as mock_parent_dataset:
         mock_parent_dataset_instance = Mock(data=data)
         mock_parent_dataset_instance.__len__ = Mock(return_value=len(data))
         mock_parent_dataset_instance.__getitem__ = Mock(
@@ -712,13 +712,13 @@ def test_ego4d_fho_main_frame_interleaved_dataset_in_context_dataset(
             }
         )
 
-        def mock_parent_dataset_init(path, **kwargs):
-            if path == "data":
+        def mock_parent_dataset_init(frames_dir, **kwargs):
+            if frames_dir == "data":
                 return mock_parent_dataset_instance
             return mock_in_context_dataset_instance
 
         mock_parent_dataset.side_effect = mock_parent_dataset_init
         dataset = FrameInterleavedDataset(
-            "data", in_context_example_narrated_actions_dir="in-context-data"
+            "data", in_context_example_frames_dir="in-context-data"
         )
         assert [d for d in dataset] == expected

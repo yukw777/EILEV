@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "video-blip"
+name = "eilev"
 version = "0.1.0"
-description = "VideoBLIP: BLIP for Videos"
+description = "EILEV: Efficient In-Context Learning in Vision-Language Models for Egocentric Videos"
 authors = ["Peter Yu <2057325+yukw777@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "video_blip" }]
+packages = [{ include = "eilev" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"

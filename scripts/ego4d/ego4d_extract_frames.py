@@ -15,7 +15,7 @@ from torchvision.transforms.functional import InterpolationMode
 from tqdm import tqdm
 from transformers import Blip2Config
 
-from video_blip.data.ego4d import Ego4dFHOMainDataset
+from eilev.data.ego4d import Ego4dFHOMainDataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--fho_main_path", required=True)

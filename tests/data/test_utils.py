@@ -6,7 +6,7 @@ import torch
 from pytorchvideo.data.clip_sampling import ClipInfo
 from transformers import BatchEncoding, Blip2Processor
 
-from video_blip.data.utils import (
+from eilev.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
     NarratedActionClipSampler,
     clean_narration_text,
@@ -879,7 +879,7 @@ def reverse(x: list[int]) -> None:
     x.reverse()
 
 
-@patch("video_blip.data.frame.random.shuffle", new=reverse)
+@patch("eilev.data.frame.random.shuffle", new=reverse)
 def test_narrated_action_clip_sampler_random() -> None:
     clip_sampler = NarratedActionClipSampler(True)
     video_duration_1 = 12

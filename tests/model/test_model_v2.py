@@ -2,7 +2,7 @@ import pytest
 import torch
 from transformers import Blip2Config, Blip2VisionConfig
 
-from video_blip.model.v2 import VideoBlipForConditionalGeneration, VideoBlipVisionModel
+from eilev.model.v2 import VideoBlipForConditionalGeneration, VideoBlipVisionModel
 
 
 @pytest.mark.parametrize("output_hidden_states", [True, False])

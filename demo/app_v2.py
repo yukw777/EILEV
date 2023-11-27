@@ -10,9 +10,9 @@ from pytorchvideo.data.video import VideoPathHandler
 from pytorchvideo.transforms import UniformTemporalSubsample
 from transformers import Blip2Processor
 
-from video_blip.data.utils import generate_input_ids_and_labels_from_interleaved
-from video_blip.model.utils import process
-from video_blip.model.v2 import VideoBlipForConditionalGeneration
+from eilev.data.utils import generate_input_ids_and_labels_from_interleaved
+from eilev.model.utils import process
+from eilev.model.v2 import VideoBlipForConditionalGeneration
 
 
 @dataclass

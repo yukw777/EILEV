@@ -4,7 +4,7 @@ import pytest
 import torch
 from transformers import BatchEncoding
 
-from video_blip.model.utils import process
+from eilev.model.utils import process
 
 
 @pytest.mark.parametrize(

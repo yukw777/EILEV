@@ -5,7 +5,7 @@ import random
 import wandb
 from tqdm import tqdm
 
-from video_blip.data.frame import FrameInterleavedDataset
+from eilev.data.frame import FrameInterleavedDataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--in_context_frames_dir", required=True)

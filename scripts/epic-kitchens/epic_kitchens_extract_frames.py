@@ -15,7 +15,7 @@ from torchvision.transforms.functional import InterpolationMode
 from tqdm import tqdm
 from transformers import Blip2Config
 
-from video_blip.data.epic_kitchens import EpicKitchensDataset
+from eilev.data.epic_kitchens import EpicKitchensDataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--annotation_path", required=True)

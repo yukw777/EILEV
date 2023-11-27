@@ -6,7 +6,7 @@ from typing import Any
 import torch
 from pytorchvideo.data import LabeledVideoDataset
 
-from video_blip.data.utils import C_REGEX, NarratedActionClipSampler
+from eilev.data.utils import C_REGEX, NarratedActionClipSampler
 
 
 def filter_action(action: dict[str, Any]) -> bool:

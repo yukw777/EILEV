@@ -2,7 +2,7 @@ import argparse
 import csv
 import json
 
-from video_blip.data.ego4d import filter_action, get_structured_noun
+from eilev.data.ego4d import filter_action, get_structured_noun
 
 parser = argparse.ArgumentParser()
 parser.add_argument("narrated_actions_csv")

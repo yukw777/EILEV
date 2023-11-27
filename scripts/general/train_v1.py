@@ -9,13 +9,13 @@ from pytorchvideo.transforms import UniformTemporalSubsample
 from torchvision.transforms import Compose
 from transformers.deepspeed import is_deepspeed_zero3_enabled
 
-from video_blip.data.frame import FrameDataset
-from video_blip.data.utils import (
+from eilev.data.frame import FrameDataset
+from eilev.data.utils import (
     DataCollatorForVideoSeq2Seq,
     clean_narration_text,
     generate_input_ids_and_labels,
 )
-from video_blip.model.v1 import VideoBlipForConditionalGeneration
+from eilev.model.v1 import VideoBlipForConditionalGeneration
 
 PROMPT = "Question: What is the camera wearer doing? Answer:"
 

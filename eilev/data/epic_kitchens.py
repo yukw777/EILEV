@@ -8,7 +8,7 @@ from typing import Any
 import torch
 from pytorchvideo.data import LabeledVideoDataset
 
-from video_blip.data.utils import NarratedActionClipSampler, parse_timestamp
+from eilev.data.utils import NarratedActionClipSampler, parse_timestamp
 
 
 class EpicKitchensDataset(LabeledVideoDataset):

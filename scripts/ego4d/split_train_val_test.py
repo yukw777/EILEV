@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from video_blip.data.ego4d import filter_action
+from eilev.data.ego4d import filter_action
 
 parser = argparse.ArgumentParser()
 parser.add_argument("fho_main_path")

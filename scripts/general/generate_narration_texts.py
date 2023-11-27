@@ -12,14 +12,14 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import Blip2Processor
 
-from video_blip.data.frame import FrameInterleavedPresampledDataset
-from video_blip.data.utils import (
+from eilev.data.frame import FrameInterleavedPresampledDataset
+from eilev.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
     clean_narration_text,
     generate_input_ids_and_labels_from_interleaved,
 )
-from video_blip.model.utils import process
-from video_blip.model.v2 import VideoBlipForConditionalGeneration
+from eilev.model.utils import process
+from eilev.model.v2 import VideoBlipForConditionalGeneration
 
 
 class DataCollator(DataCollatorForInterleavedVideoSeq2Seq):

@@ -4,7 +4,7 @@ import csv
 from tqdm import tqdm
 from transformers import AutoTokenizer, LlamaForCausalLM
 
-from video_blip.data.utils import generate_chunks
+from eilev.data.utils import generate_chunks
 
 parser = argparse.ArgumentParser()
 parser.add_argument("annotation")

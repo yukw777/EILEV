@@ -18,13 +18,13 @@ from torchvision.transforms.functional import InterpolationMode
 from transformers import PreTrainedTokenizer
 from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
 
-from video_blip.data.frame import FrameInterleavedDataset
-from video_blip.data.utils import (
+from eilev.data.frame import FrameInterleavedDataset
+from eilev.data.utils import (
     DataCollatorForInterleavedVideoSeq2Seq,
     clean_narration_text,
     generate_input_ids_and_labels_from_interleaved,
 )
-from video_blip.model.v2 import VideoBlipForConditionalGeneration
+from eilev.model.v2 import VideoBlipForConditionalGeneration
 
 # Based on prompts from InstructBLIP
 PROMPTS = [

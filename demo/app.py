@@ -12,8 +12,8 @@ from omegaconf import OmegaConf
 from pytorchvideo.data.video import VideoPathHandler
 from transformers import Blip2Processor
 
-from video_blip.model.utils import process
-from video_blip.model.v1 import VideoBlipForConditionalGeneration
+from eilev.model.utils import process
+from eilev.model.v1 import VideoBlipForConditionalGeneration
 
 
 def load_lavis_model_and_preprocess(
