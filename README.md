@@ -28,9 +28,9 @@ pip install -e .
 # Install extra packages
 pip install -e ".[demo]"
 
-# Run `python demo/app.py --help` for details
-# By default, the demo uses `kpyu/eilev-blip2-flan-t5-xl`, which requires about 16GB of VRAM.
-python demo/eilev.py --device cuda
+# Run `python demo/eilev_demo.py --help` for details
+# By default, the demo uses `kpyu/eilev-blip2-opt-2.7b-ego4d`, which requires about 16GB of VRAM.
+python demo/eilev_demo.py --device cuda
 ```
 
 ### VideoBLIP
@@ -39,9 +39,9 @@ python demo/eilev.py --device cuda
 # Install extra packages
 pip install -e ".[demo]"
 
-# Run `python demo/app.py --help` for details
+# Run `python demo/video_blip_demo.py --help` for details
 # By default, the demo uses `kpyu/video-blip-flan-t5-xl-ego4d`, which requires about 16GB of VRAM.
-python demo/video_blip.py --device cuda
+python demo/video_blip_demo.py --device cuda
 ```
 
 ## Pretrained Weights
