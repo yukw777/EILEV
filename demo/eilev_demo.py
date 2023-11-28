@@ -288,7 +288,7 @@ def construct_demo(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="kpyu/video-blip-flan-t5-xl-ego4d")
+    parser.add_argument("--model", default="kpyu/eilev-blip2-opt-2.7b")
     parser.add_argument("--processor", default=None)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--queue", action="store_true", default=False)

@@ -29,7 +29,7 @@ pip install -e .
 pip install -e ".[demo]"
 
 # Run `python demo/eilev_demo.py --help` for details
-# By default, the demo uses `kpyu/eilev-blip2-opt-2.7b-ego4d`, which requires about 16GB of VRAM.
+# By default, the demo uses `kpyu/eilev-blip2-opt-2.7b`, which requires about 16GB of VRAM.
 python demo/eilev_demo.py --device cuda
 ```
 
