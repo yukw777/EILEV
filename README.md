@@ -48,6 +48,11 @@ python demo/video_blip_demo.py --device cuda
 
 ### EILEV
 
+- [`kpyu/eilev-blip2-opt-2.7b`](https://huggingface.co/kpyu/eilev-blip2-opt-2.7b)
+  - [`Salesforce/blip2-opt-2.7b`](https://huggingface.co/Salesforce/blip2-opt-2.7b) trained using EILEV on on Ego4D.
+- [`kpyu/eilev-blip2-flan-t5-xl`](https://huggingface.co/kpyu/eilev-blip2-flan-t5-xl)
+  - [`Salesforce/blip2-flan-t5-xl`](https://huggingface.co/Salesforce/blip2-flan-t5-xl) trained using EILEV on Ego4D.
+
 ### VideoBLIP
 
 - [`kpyu/video-blip-opt-2.7b-ego4d`](https://huggingface.co/kpyu/video-blip-opt-2.7b-ego4d)
