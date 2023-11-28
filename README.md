@@ -1,6 +1,6 @@
 # EILEV: Efficient In-Context Learning in Vision-Language Models for Egocentric Videos
 
-[![Demo](https://img.shields.io/badge/Website-Demo-ff69b4.svg)](https://48f6-141-212-106-177.ngrok-free.app/)
+[![Demo](https://img.shields.io/badge/Website-Demo-ff69b4.svg)](https://dd71-141-212-106-177.ngrok-free.app)
 
 ![Teaser](figures/teaser.png)
 
