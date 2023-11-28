@@ -1,19 +1,10 @@
-# VideoBLIP: Supercharged [BLIP-2](https://arxiv.org/abs/2301.12597) that can handle videos.
+# EILEV: Efficient In-Context Learning in Vision-Language Models for Egocentric Videos
 
 [![Demo](https://img.shields.io/badge/Website-Demo-ff69b4.svg)](https://48f6-141-212-106-177.ngrok-free.app/)
 
-![Demo](figures/demo.png)
+![Teaser](figures/teaser.png)
 
-## Features
-
-- Generate texts based on videos.
-- Have a chat about a video.
-- Optimized for egocentric views.
-
-## Upcoming Features
-
-- Bigger models.
-- In-context learning.
+EILEV is a novel training method that can elicit in-context learning in vision-language models (VLMs) for egocentric videos without requiring massive, naturalistic egocentric video datasets. It is an extension to the preliminary work done in [VideoBLIP](https://github.com/yukw777/VideoBLIP).
 
 ## Setup
 
@@ -22,29 +13,42 @@
 curl -sSL https://install.python-poetry.org | python3 -
 
 # Clone the repository
-git clone git@github.com:yukw777/VideoBLIP.git
-cd VideoBLIP
+git clone git@github.com:yukw777/EILEV.git
+cd EILEV
 
-# Install VideoBLIP using poetry
-# Note: if you notice "keyring" related error messages or poetry hanging,
-# pelase export the following environment variable.
-# More info can be found here: https://github.com/python-poetry/poetry/issues/1917
-export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
-poetry install
-
-# Activate the poetry virtualenv
-poetry shell
+# Install EILEV in editable mode
+pip install -e .
 ```
 
 ## Running Demo Locally
 
+### EILEV
+
 ```bash
+# Install extra packages
+pip install -e ".[demo]"
+
+# Run `python demo/app.py --help` for details
+# By default, the demo uses `kpyu/eilev-blip2-flan-t5-xl`, which requires about 16GB of VRAM.
+python demo/eilev.py --device cuda
+```
+
+### VideoBLIP
+
+```bash
+# Install extra packages
+pip install -e ".[demo]"
+
 # Run `python demo/app.py --help` for details
 # By default, the demo uses `kpyu/video-blip-flan-t5-xl-ego4d`, which requires about 16GB of VRAM.
-python demo/app.py --device cuda
+python demo/video_blip.py --device cuda
 ```
 
 ## Pretrained Weights
+
+### EILEV
+
+### VideoBLIP
 
 - [`kpyu/video-blip-opt-2.7b-ego4d`](https://huggingface.co/kpyu/video-blip-opt-2.7b-ego4d)
   - VideoBLIP initialized with [`Salesforce/blip2-opt-2.7b`](https://huggingface.co/Salesforce/blip2-opt-2.7b) and fine-tuned on Ego4D.
@@ -86,13 +90,79 @@ python scripts/ego4d/extract_frames.py \
 
 **3. Train**
 
-_v1_
+- `kpyu/eilev-blip2-opt-2.7b-ego4d`
+
+```bash
+# Takes about 1 day and 12 hours on 8 A40s
+RDZV_ID=$RANDOM
+MASTER_NODE=$(hostname)
+torchrun --nproc_per_node=8 --rdzv-id=$RDZV_ID --rdzv-backend=c10d --rdzv-endpoint=$MASTER_NODE \
+  scripts/general/train_v2.py \
+  --model_name_or_path Salesforce/blip2-opt-2.7b \
+  --num_subsample_frames 8 \
+  --train_num_in_context_examples_per_sample 16 \
+  --val_num_in_context_examples_per_sample 16 \
+  --verb_noun_ratio 0.5 \
+  --train_frames_dir path/to/extracted/train/frames \
+  --val_frames_dir path/to/extracted/val/frames \
+  --output_dir path/to/output \
+  --num_train_epochs 5 \
+  --warmup_steps 0 \
+  --learning_rate 1e-5 \
+  --per_device_train_batch_size 1 \
+  --gradient_accumulation_steps 16 \
+  --ddp_find_unused_parameters False \
+  --per_device_eval_batch_size 8 \
+  --weight_decay 0.05 \
+  --dataloader_num_workers <num_cpus> \
+  --bf16 True \
+  --evaluation_strategy steps \
+  --eval_steps 200 \
+  --save_strategy steps \
+  --save_steps 200 \
+  --save_total_limit 3 \
+  --logging_steps 10
+```
+
+- `kpyu/eilev-blip2-flan-t5-xl`
+
+```bash
+# Takes about 1 day and 12 hours on 8 A40s
+RDZV_ID=$RANDOM
+MASTER_NODE=$(hostname)
+torchrun --nproc_per_node=8 --rdzv-id=$RDZV_ID --rdzv-backend=c10d --rdzv-endpoint=$MASTER_NODE \
+  scripts/general/train_v2.py \
+  --model_name_or_path Salesforce/blip2-flan-t5-xl \
+  --num_subsample_frames 8 \
+  --train_num_in_context_examples_per_sample 16 \
+  --val_num_in_context_examples_per_sample 16 \
+  --verb_noun_ratio 0.5 \
+  --train_frames_dir path/to/extracted/train/frames \
+  --val_frames_dir path/to/extracted/val/frames \
+  --output_dir path/to/output \
+  --num_train_epochs 5 \
+  --warmup_steps 0 \
+  --learning_rate 1e-5 \
+  --per_device_train_batch_size 1 \
+  --gradient_accumulation_steps 16 \
+  --ddp_find_unused_parameters False \
+  --per_device_eval_batch_size 8 \
+  --weight_decay 0.05 \
+  --dataloader_num_workers <num_cpus> \
+  --bf16 True \
+  --evaluation_strategy steps \
+  --eval_steps 200 \
+  --save_strategy steps \
+  --save_steps 200 \
+  --save_total_limit 3 \
+  --logging_steps 10
+```
 
 - `kpyu/video-blip-opt-2.7b-ego4d`
 
 ```bash
 # Takes about 24 hours on one A40
-python scripts/ego4d/train_v1.py \
+python scripts/general/train_v1.py \
     --model_name_or_path Salesforce/blip2-opt-2.7b \
     --num_subsample_frames 8 \
     --train_narrated_actions_dir path/to/extracted/train/frames \
@@ -118,7 +188,7 @@ python scripts/ego4d/train_v1.py \
 
 ```bash
 # Takes about 23 hours on one A40
-python scripts/ego4d/train_v1.py \
+python scripts/general/train_v1.py \
     --model_name_or_path Salesforce/blip2-flan-t5-xl \
     --num_subsample_frames 8 \
     --train_narrated_actions_dir path/to/extracted/train/frames \
@@ -164,9 +234,32 @@ P29_05.MP4
 P30_08.MP4
 ```
 
-## Citing VideoBLIP
+## Development
 
-Please refer to [CITATION.cff](CITATION.cff), or click the "Cite this repository" button on GitHub.
+```bash
+# Install poetry https://python-poetry.org/
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Clone the repository
+git clone git@github.com:yukw777/EILEV.git
+cd EILEV
+
+# Install EILEV using poetry
+# Note: if you notice "keyring" related error messages or poetry hanging,
+# pelase export the following environment variable.
+# More info can be found here: https://github.com/python-poetry/poetry/issues/8623
+export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
+poetry install --with dev
+
+# Activate the poetry virtualenv
+poetry shell
+
+# Run unit tests to verify the dev installation
+pytest
+```
+
+## Citing EILEV
+
 
 ## Funding
 
