@@ -266,6 +266,6 @@ pytest
 ## Citing EILEV
 
 
-## Funding
+## Acknowledgements
 
-This project is supported by the Defense Advanced Research Projects Agency (DARPA) under the PTG Program, Contract No. HR00112220003. The views expressed are those of the author(s) and do not necessarily reflect the views of DARPA.
+We thank @shanestorks for his valuable insight and comments. This work has been supported by the Defense Advanced Research Projects Agency (DARPA) under the PTG Program, Contract No. HR00112220003. The views expressed are those of the authors and do not necessarily reflect the views of DARPA.
