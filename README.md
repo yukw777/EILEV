@@ -4,7 +4,7 @@
 
 ![Teaser](figures/teaser.png)
 
-EILEV is a novel training method that can elicit in-context learning in vision-language models (VLMs) for egocentric videos without requiring massive, naturalistic egocentric video datasets. It is an extension to the preliminary work done in [VideoBLIP](https://github.com/yukw777/VideoBLIP), which is basically EILEV with a context size of 0.
+EILEV is a novel training method that can elicit in-context learning in vision-language models (VLMs) for egocentric videos without requiring massive, naturalistic egocentric video datasets. It is an extension to the preliminary work done in [VideoBLIP](https://github.com/yukw777/VideoBLIP), which contains models trained using EILEV with no in-context examples.
 
 ## Setup
 
