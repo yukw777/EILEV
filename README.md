@@ -264,6 +264,9 @@ poetry install --with dev
 # Activate the poetry virtualenv
 poetry shell
 
+# Install pre-commit hooks
+pre-commit install
+
 # Run unit tests to verify the dev installation
 pytest
 ```
