@@ -52,7 +52,8 @@ def generate_hf(
         max_new_tokens=max_new_tokens,
         temperature=temperature,
         top_p=0.9,
-        repetition_penalty=1.5
+        repetition_penalty=1.5,
+        do_sample=True
     )
     return processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
 
@@ -125,14 +126,15 @@ def construct_demo(
     video_path_handler: VideoPathHandler,
 ) -> gr.Blocks:
     with gr.Blocks() as demo:
-        gr.Markdown("# VideoBLIP Demo")
-        gr.Markdown("Upload a video and have a conversation about it with VideoBLIP!")
         gr.Markdown(
-            """**Limitations**
+            """# VideoBLIP Demo
+## Upload a video and have a conversation about it with VideoBLIP!
+**Limitations**
 - Due to computational limits, VideoBLIP only processes the first 10 seconds of the uploaded video.
 - Please upload only short videos (around 10 seconds) as we have limited computational resources.
 - If you use a non-instruction-tuned LLM backbone, it may not be able to perform multi-turn dialogues.
-- If you still want to chat with a non-instruction-tuned LLM backbone, try formatting your input as \"Question: {} Answer: \""""  # noqa: E501
+- If you still want to chat with a non-instruction-tuned LLM backbone, try formatting your input as \"Question: {} Answer: \"
+"""  # noqa: E501
         )
         with gr.Row():
             with gr.Column():
@@ -155,11 +157,12 @@ def construct_demo(
                         respond_partial = partial(
                             respond, generate_fn, video_path_handler
                         )
-                        with gr.Column(scale=0.85):
+                        with gr.Column(scale=85):
                             chat_input = gr.Textbox(
                                 show_label=False,
                                 placeholder="Enter text and press enter or click send",
-                            ).style(container=False)
+                                container=False,
+                            )
                             chat_input.submit(
                                 respond_partial,
                                 inputs=[
@@ -172,7 +175,7 @@ def construct_demo(
                                 ],
                                 outputs=[chat_input, chatbot],
                             )
-                        with gr.Column(scale=0.15, min_width=0):
+                        with gr.Column(scale=15, min_width=0):
                             send_button = gr.Button(value="Send", variant="primary")
                             send_button.click(
                                 respond_partial,

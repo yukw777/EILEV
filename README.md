@@ -39,6 +39,11 @@ python demo/eilev_demo.py --device cuda
 # Install extra packages
 pip install -e ".[demo]"
 
+# If you see the following error:
+# FileNotFoundError: [Errno 2] No such file or directory: 'ffprobe': 'ffprobe'
+# install ffmpeg
+sudo apt install ffmpeg
+
 # Run `python demo/video_blip_demo.py --help` for details
 # By default, the demo uses `kpyu/video-blip-flan-t5-xl-ego4d`, which requires about 16GB of VRAM.
 python demo/video_blip_demo.py --device cuda

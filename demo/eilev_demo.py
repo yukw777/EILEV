@@ -197,49 +197,51 @@ def construct_demo(
         minimum=0.1, maximum=1.0, value=0.6, label="Penalty Alpha"
     )
     with gr.Blocks() as demo:
-        gr.Markdown("# VideoBLIP Demo")
-        gr.Markdown("Have a multi-modal conversation with VideoBLIP!")
+        gr.Markdown(
+            """# EILEV Demo
+## Have a multi-modal conversation with an EILEV-trained model!
+"""
+        )
         with gr.Row():
             with gr.Column():
                 gr.Markdown(
                     """**Instructions**
-- Due to Gradio's lack of support for multi-media messages, you have to send texts, images and videos separately.
+- You can compose messages arbitrarily interleaved with images, videos and texts.
 - After entering your text message in the text box, simply press enter or click the "Send" button to send it.
 - Click the "Upload" button to send an image or a video. You can upload multiple files at once.
-- When you're done composing your multi-media message, click the "Respond" button to tell VideoBLIP to respond."""  # noqa: E501
+- When you're done composing your message, click the "Respond" button to tell the model to respond."""  # noqa: E501
                 )
             with gr.Column():
                 gr.Markdown(
                     """**Limitations**
 - Please upload only short videos (around 8 seconds) as we have limited computational resources.
-- Due to computational limits, VideoBLIP only processes the first 8 seconds of the uploaded videos.
-- If you use a non-instruction-tuned LLM backbone, it may not be able to perform multi-turn dialogues.
-- If you still want to chat with a non-instruction-tuned LLM backbone, try formatting your input as \"Question: {} Answer: \""""  # noqa: E501
+- Due to computational limits, the model processes only the first 8 seconds of the uploaded videos."""  # noqa: E501
                 )
         with gr.Row():
-            with gr.Column(scale=0.7):
+            with gr.Column(scale=7):
                 with gr.Row():
                     chatbot = gr.Chatbot()
                 with gr.Row():
                     state = gr.State(value=State)
-                    with gr.Column(scale=0.7):
+                    with gr.Column(scale=14):
                         chat_input = gr.Textbox(
                             show_label=False,
                             placeholder="Enter text and press enter or click send",
-                        ).style(container=False)
+                            container=False,
+                        )
                         chat_input.submit(
                             add_text,
                             inputs=[chat_input, state, chatbot],
                             outputs=[chat_input, chatbot],
                         )
-                    with gr.Column(scale=0.15, min_width=0):
+                    with gr.Column(scale=3, min_width=0):
                         send_button = gr.Button(value="Send")
                         send_button.click(
                             add_text,
                             inputs=[chat_input, state, chatbot],
                             outputs=[chat_input, chatbot],
                         )
-                    with gr.Column(scale=0.15, min_width=0):
+                    with gr.Column(scale=3, min_width=0):
                         upload_button = gr.UploadButton(
                             label="Upload",
                             file_types=["image", "video"],
@@ -250,7 +252,7 @@ def construct_demo(
                             inputs=[state, chatbot, upload_button],
                             outputs=[chatbot],
                         )
-            with gr.Column(scale=0.3):
+            with gr.Column(scale=3):
                 respond_button = gr.Button(value="Respond", variant="primary")
                 respond_button.click(
                     partial(respond, model, processor),
