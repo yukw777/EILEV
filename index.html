@@ -45,7 +45,7 @@
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
   <link rel="stylesheet" href="./static/css/index.css">
-  <link rel="icon" href="./static/images/favicon.svg">
+  <link rel="icon" href="./static/images/page_icon.svg">
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script defer src="./static/js/fontawesome.all.min.js"></script>
@@ -82,7 +82,7 @@
           <div class="column has-text-centered">
             <div class="publication-links">
               <!-- PDF Link. -->
-              <span class="link-block">
+              <!-- <span class="link-block">
                 <a href="https://arxiv.org/pdf/2311.17041.pdf"
                    class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">
@@ -90,7 +90,7 @@
                   </span>
                   <span>Paper</span>
                 </a>
-              </span>
+              </span> -->
               <span class="link-block">
                 <a href="https://arxiv.org/abs/2311.17041"
                    class="external-link button is-normal is-rounded is-dark">
@@ -130,6 +130,16 @@
                   <span>Data</span>
                   </a>
               </span> -->
+              <!-- Demo Link. -->
+              <span class="link-block">
+                <a href="https://dd71-141-212-106-177.ngrok-free.app/"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M256 0c-25.3 0-47.2 14.7-57.6 36c-7-2.6-14.5-4-22.4-4c-35.3 0-64 28.7-64 64V261.5l-2.7-2.7c-25-25-65.5-25-90.5 0s-25 65.5 0 90.5L106.5 437c48 48 113.1 75 181 75H296h8c1.5 0 3-.1 4.5-.4c91.7-6.2 165-79.4 171.1-171.1c.3-1.5 .4-3 .4-4.5V160c0-35.3-28.7-64-64-64c-5.5 0-10.9 .7-16 2V96c0-35.3-28.7-64-64-64c-7.9 0-15.4 1.4-22.4 4C303.2 14.7 281.3 0 256 0zM240 96.1c0 0 0-.1 0-.1V64c0-8.8 7.2-16 16-16s16 7.2 16 16V95.9c0 0 0 .1 0 .1V232c0 13.3 10.7 24 24 24s24-10.7 24-24V96c0 0 0 0 0-.1c0-8.8 7.2-16 16-16s16 7.2 16 16v55.9c0 0 0 .1 0 .1v80c0 13.3 10.7 24 24 24s24-10.7 24-24V160.1c0 0 0-.1 0-.1c0-8.8 7.2-16 16-16s16 7.2 16 16V332.9c-.1 .6-.1 1.3-.2 1.9c-3.4 69.7-59.3 125.6-129 129c-.6 0-1.3 .1-1.9 .2H296h-8.5c-55.2 0-108.1-21.9-147.1-60.9L52.7 315.3c-6.2-6.2-6.2-16.4 0-22.6s16.4-6.2 22.6 0L119 336.4c6.9 6.9 17.2 8.9 26.2 5.2s14.8-12.5 14.8-22.2V96c0-8.8 7.2-16 16-16c8.8 0 16 7.1 16 15.9V232c0 13.3 10.7 24 24 24s24-10.7 24-24V96.1z"/></svg>
+                  </span>
+                  <span>Demo</span>
+                </a>
+              </span>
             </div>
 
           </div>
@@ -154,89 +164,6 @@
         via in-context learning.
       </h2>
     </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="container is-max-desktop">
-    <!-- Abstract. -->
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">Abstract</h2>
-        <div class="content has-text-justified">
-          <!-- <p>
-            Recent advancements in text-only large language models (LLMs) have highlighted the benefit 
-            of in-context learning for adapting to new tasks with a few demonstrations. However, extending 
-            in-context learning to large vision-language models (VLMs) using a huge amount of naturalistic 
-            vision-language data has shown limited success, particularly for egocentric videos, due to 
-            high data collection costs. We propose a novel training method 
-            <span class="eilev">E</span>fficient <span class="eilev">I</span>n-context <span class="eilev">L</span>earning 
-            on <span class="eilev">E</span>gocentric <span class="eilev">V</span>ideos (<span class="eilev">EILEV</span>), 
-            which elicits in-context learning in VLMs for egocentric videos without requiring massive, 
-            naturalistic egocentric video datasets. <span class="eilev">EILEV</span> involves architectural 
-            and training data adaptations to allow the model to process contexts interleaved with video 
-            clips and narrations, sampling of in-context examples with clusters of similar verbs and nouns, 
-            use of data with skewed marginal distributions with a long tail of infrequent verbs and nouns, 
-            as well as homonyms and synonyms. Our evaluations show that <span class="eilev">EILEV</span>-trained 
-            models outperform larger VLMs trained on a huge amount of naturalistic data in in-context learning. 
-            Furthermore, they can generalize to not only out-of-distribution, but also novel, rare egocentric 
-            videos and texts via in-context learning, demonstrating potential for applications requiring 
-            cost-effective training, and rapid post-deployment adaptability. Our code and demo are available 
-            on <a href="https://github.com/yukw777/EILEV">GitHub</a>.
-          </p> -->
-          <p>
-            Recent advancements in text-only large language models (LLMs) have highlighted the benefit 
-            of in-context learning for adapting to new tasks with a few demonstrations. However, 
-            extending in-context learning to large vision-language models (VLMs) using a huge amount of 
-            naturalistic vision-language data has shown limited success, particularly for egocentric videos, 
-            due to high data collection costs. We propose a novel training method \(\mathbb{E}\)fficient 
-            \(\mathbb{I}\)n-context \(\mathbb{L}\)earning on \(\mathbb{E}\)gocentric \(\mathbb{V}\)ideos 
-            (\(\mathbb{EILEV}\)), which elicits in-context learning in VLMs for egocentric videos without 
-            requiring massive, naturalistic egocentric video datasets. \(\mathbb{EILEV}~\)involves 
-            architectural and training data adaptations to allow the model to process contexts interleaved 
-            with video clips and narrations, sampling of in-context examples with clusters of similar 
-            verbs and nouns, use of data with skewed marginal distributions with a long tail of infrequent 
-            verbs and nouns, as well as homonyms and synonyms. Our evaluations show that \(\mathbb{EILEV}\)-trained 
-            models outperform larger VLMs trained on a huge amount of naturalistic data in 
-            in-context learning. Furthermore, they can generalize to not only out-of-distribution, 
-            but also novel, rare egocentric videos and texts via in-context learning, demonstrating 
-            potential for applications requiring cost-effective training, and rapid post-deployment adaptability. 
-            Our code and demo are available on <a href="https://github.com/yukw777/EILEV">GitHub</a>.
-          </p>
-        </div>
-      </div>
-    </div>
-    <!--/ Abstract. -->
-
-    <!-- Paper video. -->
-    <!-- <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">Video</h2>
-        <div class="publication-video">
-          <iframe src="https://www.youtube.com/embed/MrKrnHhk8IA?rel=0&amp;showinfo=0"
-                  frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-        </div>
-      </div>
-    </div> -->
-    <!--/ Paper video. -->
-  </div>
-</section>
-
-
-<section class="section">
-  <div class="container is-max-desktop">
-
-    <!-- Concurrent Work. -->
-    <div class="columns is-centered">
-      <div class="column is-full-width">
-        <h2 class="title is-3">Related Work</h2>
-
-        <div class="content has-text-justified">
-        </div>
-      </div>
-    </div>
-    <!--/ Concurrent Work. -->
-
   </div>
 </section>
 
