@@ -265,6 +265,16 @@ pytest
 
 ## Citing EILEV
 
+```
+@misc{yu2023efficient,
+      title={Efficient In-Context Learning in Vision-Language Models for Egocentric Videos},
+      author={Keunwoo Peter Yu and Zheyuan Zhang and Fengyuan Hu and Joyce Chai},
+      year={2023},
+      eprint={2311.17041},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```
 
 ## Acknowledgements
 
