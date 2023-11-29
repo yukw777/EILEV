@@ -155,17 +155,3 @@ body {
 #interpolation-image-wrapper img {
   border-radius: 5px;
 }
-
-@font-face {
-  font-family: "Fine Blackboard";
-  src: url("https://db.onlinewebfonts.com/t/41cd42bd029db301a4207376ced4fc45.eot");
-  src: url("https://db.onlinewebfonts.com/t/41cd42bd029db301a4207376ced4fc45.eot?#iefix")format("embedded-opentype"),
-  url("https://db.onlinewebfonts.com/t/41cd42bd029db301a4207376ced4fc45.woff2")format("woff2"),
-  url("https://db.onlinewebfonts.com/t/41cd42bd029db301a4207376ced4fc45.woff")format("woff"),
-  url("https://db.onlinewebfonts.com/t/41cd42bd029db301a4207376ced4fc45.ttf")format("truetype"),
-  url("https://db.onlinewebfonts.com/t/41cd42bd029db301a4207376ced4fc45.svg#Fine Blackboard")format("svg");
-}
-
-.eilev {
-  font-family: "Fine Blackboard";
-}
