@@ -16,7 +16,7 @@ def generate(
     model: VideoBlipForConditionalGeneration,
     processor: Blip2Processor,
     videos_and_texts: list[str],
-):
+) -> None:
     video_path_handler = VideoPathHandler()
     # uniformly subsample 8 frames
     subsampler = UniformTemporalSubsample(8)
