@@ -211,35 +211,34 @@ def construct_demo(
                     chatbot = gr.Chatbot()
                 with gr.Row():
                     state = gr.State(value=State)
-                    with gr.Column(scale=14):
-                        chat_input = gr.Textbox(
-                            show_label=False,
-                            placeholder="Enter text and press enter or click send",
-                            container=False,
-                        )
-                        chat_input.submit(
-                            add_text,
-                            inputs=[chat_input, state, chatbot],
-                            outputs=[chat_input, chatbot],
-                        )
-                    with gr.Column(scale=3, min_width=0):
-                        send_button = gr.Button(value="Send")
-                        send_button.click(
-                            add_text,
-                            inputs=[chat_input, state, chatbot],
-                            outputs=[chat_input, chatbot],
-                        )
-                    with gr.Column(scale=3, min_width=0):
-                        upload_button = gr.UploadButton(
-                            label="Upload",
-                            file_types=["image", "video"],
-                            file_count="multiple",
-                        )
-                        upload_button.upload(
-                            partial(add_files, processor, video_path_handler),
-                            inputs=[state, chatbot, upload_button],
-                            outputs=[chatbot],
-                        )
+                    chat_input = gr.Textbox(
+                        show_label=False,
+                        placeholder="Enter text and press enter or click send",
+                        container=False,
+                        scale=10,
+                        min_width=500,
+                    )
+                    chat_input.submit(
+                        add_text,
+                        inputs=[chat_input, state, chatbot],
+                        outputs=[chat_input, chatbot],
+                    )
+                    send_button = gr.Button(value="Send")
+                    send_button.click(
+                        add_text,
+                        inputs=[chat_input, state, chatbot],
+                        outputs=[chat_input, chatbot],
+                    )
+                    upload_button = gr.UploadButton(
+                        label="Upload",
+                        file_types=["image", "video"],
+                        file_count="multiple",
+                    )
+                    upload_button.upload(
+                        partial(add_files, processor, video_path_handler),
+                        inputs=[state, chatbot, upload_button],
+                        outputs=[chatbot],
+                    )
             with gr.Column(scale=3):
                 respond_button = gr.Button(value="Respond", variant="primary")
                 beams = gr.Slider(
