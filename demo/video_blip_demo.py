@@ -218,6 +218,10 @@ def construct_demo(
                 ],
                 inputs=[video_input, chat_input],
             )
+        with gr.Row():
+            gr.Markdown(
+                "Example videos are from [Ego4D](https://ego4d-data.org/) and Hamzah Tariq ([Pexels](https://www.pexels.com/@hamzah-tariq-28798546/), [Instagram](https://www.instagram.com/hamzah_tariq/))"  # noqa: E501
+            )
 
     return demo
 

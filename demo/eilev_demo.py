@@ -78,33 +78,22 @@ def respond(
 
 
 EXAMPLES: dict[str, list[str | list[str]]] = {
-    "good-instruct": [
+    "Example from paper": [
+        ["examples/dough-mixer.mp4"],
+        "Question: What is the camera wearer doing?",
+        "Answer: He hits the scraper in his right hand on the dough mixer guard.",
+        ["examples/paint.mp4"],
+        "Question: What is the camera wearer doing?",
+        "Answer: He paints the wall in the room with the paint brush.",
+        ["examples/trowel.mp4"],
+        "Question: What is the camera wearer doing? Answer:",
+    ],
+    "Bicycle fixing and motorcycle riding": [
         ["examples/bike-fixing-0.mp4"],
         "What is the camera wearer doing?",
         "He is fixing a bicycle handle.",
         ["examples/motorcycle-riding-0.mp4"],
-        "What is happening in the video?",
-    ],
-    "bad-instruct": [
-        ["examples/bike-fixing-0.mp4"],
         "What is the camera wearer doing?",
-        "He is fixing a bicycle handle.",
-        ["examples/motorcycle-riding-0.mp4"],
-        "What is the camera wearer doing?",
-    ],
-    "good-non-instruct": [
-        ["examples/bike-fixing-0.mp4"],
-        "Question: What is the camera wearer doing? Answer:",
-        "He is fixing a bicycle handle.",
-        ["examples/motorcycle-riding-0.mp4"],
-        "Question: What is happening in the video? Answer:",
-    ],
-    "bad-non-instruct": [
-        ["examples/bike-fixing-0.mp4"],
-        "Question: What is the camera wearer doing? Answer:",
-        "He is fixing a bicycle handle.",
-        ["examples/motorcycle-riding-0.mp4"],
-        "Question: What is the camera wearer doing? Answer:",
     ],
 }
 
@@ -173,7 +162,7 @@ def add_files(
         end_sec = min(video.duration, 8)
         clip = video.get_clip(0, end_sec)
 
-        frames = subsampler(clip["video"])
+        frames = subsampler(clip["video"].to(torch.uint8))
 
         # process the frames and add it to the video list
         state.videos.append(process(processor, video=frames).pixel_values.squeeze(0))
@@ -273,16 +262,18 @@ def construct_demo(
                 label="Examples",
                 components=[gr.Textbox(visible=False)],
                 samples=[
-                    ["good-instruct"],
-                    ["bad-instruct"],
-                    ["good-non-instruct"],
-                    ["bad-non-instruct"],
+                    ["Example from paper"],
+                    ["Bicycle fixing and motorcycle riding"],
                 ],
             )
             examples.click(
                 partial(click_example, processor, video_path_handler),
                 inputs=[examples],
                 outputs=[state, chatbot],
+            )
+        with gr.Row():
+            gr.Markdown(
+                "Example videos are from [Ego4D](https://ego4d-data.org/) and Hamzah Tariq ([Pexels](https://www.pexels.com/@hamzah-tariq-28798546/), [Instagram](https://www.instagram.com/hamzah_tariq/))"  # noqa: E501
             )
 
     return demo
