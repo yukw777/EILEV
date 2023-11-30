@@ -86,7 +86,8 @@ EXAMPLES: dict[str, list[str | list[str]]] = {
     "Example from paper": [
         ["examples/dough-mixer.mp4"],
         "Question: What is the camera wearer doing?",
-        "Answer: The camera wearer hits the scraper in his right hand on the dough mixer guard.",
+        "Answer: The camera wearer hits the scraper in his right hand on the dough"
+        " mixer guard.",
         ["examples/paint.mp4"],
         "Question: What is the camera wearer doing?",
         "Answer: The camera wearer paints the wall in the room with the paint brush.",
