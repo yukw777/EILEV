@@ -39,6 +39,17 @@ python samples/eilev_generate_action_narration.py \
   "Question: What is the camera wearer doing?" "Answer:"
 ```
 
+### VideoBLIP
+
+```bash
+# Run `python samples/video_blip_generate_action_narration.py --help` for details
+# By default, the demo uses `kpyu/video-blip-flan-t5-xl-ego4d`, which requires about 16GB of VRAM.
+python samples/video_blip_generate_action_narration.py \
+  --device cuda \
+  demo/examples/bike-fixing-0.mp4 \
+  "What is the camera wearer doing?"
+```
+
 ## Running Demo Locally
 
 ### EILEV
