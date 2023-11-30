@@ -34,9 +34,8 @@ def respond(
     processor: Blip2Processor,
     state: State,
     chat_history: list[list[str | None | tuple]],
-    top_k: int,
+    beams: int,
     max_new_tokens: int,
-    penalty_alpha: float,
 ) -> list[list[str | None | tuple]]:
     prompts: list[tuple[str, int]] = []
     for text_block, videos in zip(state.text_blocks, state.text_block_video_map):
@@ -55,9 +54,15 @@ def respond(
         "input_ids": inputs["input_ids"].unsqueeze(0).to(model.device),
         "video_input_mask": inputs["video_input_mask"].unsqueeze(0).to(model.device),
         "max_new_tokens": max_new_tokens,
-        "penalty_alpha": penalty_alpha,
-        "top_k": top_k,
+        "num_beams": beams,
+        "do_sample": False,
+        "length_penalty": -1,
     }
+    if model.config.text_config.architectures[0] == "OPTForCausalLM":
+        # if the LLM is OPT, set eos_token_id to the newline character as this is the
+        # setting used by BLIP-2.
+        # https://github.com/salesforce/LAVIS/blob/7f00a0891b2890843f61c002a8e9532a40343648/lavis/models/blip2_models/blip2_opt.py#L91-L93
+        generate_kwargs["eos_token_id"] = 50118
 
     generated_ids = model.generate(**generate_kwargs)  # type: ignore
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[
@@ -81,10 +86,10 @@ EXAMPLES: dict[str, list[str | list[str]]] = {
     "Example from paper": [
         ["examples/dough-mixer.mp4"],
         "Question: What is the camera wearer doing?",
-        "Answer: He hits the scraper in his right hand on the dough mixer guard.",
+        "Answer: The camera wearer hits the scraper in his right hand on the dough mixer guard.",
         ["examples/paint.mp4"],
         "Question: What is the camera wearer doing?",
-        "Answer: He paints the wall in the room with the paint brush.",
+        "Answer: The camera wearer paints the wall in the room with the paint brush.",
         ["examples/trowel.mp4"],
         "Question: What is the camera wearer doing? Answer:",
     ],
@@ -178,13 +183,6 @@ def construct_demo(
     processor: Blip2Processor,
     video_path_handler: VideoPathHandler,
 ) -> gr.Blocks:
-    top_k = gr.Slider(minimum=0, maximum=10, value=4, step=1, label="Top k")
-    max_new_tokens = gr.Slider(
-        minimum=20, maximum=256, value=128, label="Max new tokens"
-    )
-    penalty_alpha = gr.Slider(
-        minimum=0.1, maximum=1.0, value=0.6, label="Penalty Alpha"
-    )
     with gr.Blocks() as demo:
         gr.Markdown(
             """# EILEV Demo
@@ -243,14 +241,28 @@ def construct_demo(
                         )
             with gr.Column(scale=3):
                 respond_button = gr.Button(value="Respond", variant="primary")
+                beams = gr.Slider(
+                    minimum=1,
+                    maximum=10,
+                    value=5,
+                    step=1,
+                    label="# of beams",
+                    render=False,
+                )
+                max_new_tokens = gr.Slider(
+                    minimum=20,
+                    maximum=64,
+                    value=32,
+                    label="Max new tokens",
+                    render=False,
+                )
                 respond_button.click(
                     partial(respond, model, processor),
-                    inputs=[state, chatbot, top_k, max_new_tokens, penalty_alpha],
+                    inputs=[state, chatbot, beams, max_new_tokens],
                     outputs=[chatbot],
                 )
-                top_k.render()
+                beams.render()
                 max_new_tokens.render()
-                penalty_alpha.render()
                 clear_button = gr.Button(value="Clear")
                 clear_button.click(
                     lambda: (State(), "", []),
