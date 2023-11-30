@@ -1,6 +1,8 @@
 # EILEV: Efficient In-Context Learning in Vision-Language Models for Egocentric Videos
 
-[![Demo](https://img.shields.io/badge/Website-Demo-ff69b4.svg)](http://sled-whistler.eecs.umich.edu:7778/) [![Paper](http://img.shields.io/badge/paper-arxiv.2311.17041-B31B1B.svg)](https://arxiv.org/abs/2311.17041)
+[![Project](https://img.shields.io/badge/Project-Page-20B2AA.svg)](https://yukw777.github.io/EILEV/)
+[![Paper](https://img.shields.io/badge/arXiv-Paper-red.svg)](https://arxiv.org/abs/2311.17041)
+[![Demo](https://img.shields.io/badge/Website-Demo-ff69b4.svg)](http://sled-whistler.eecs.umich.edu:7778/)
 
 ![Teaser](figures/teaser.png)
 
