@@ -20,6 +20,25 @@ cd EILEV
 pip install -e .
 ```
 
+## Running Sample Scripts
+
+### EILEV
+
+```bash
+# Run `python samples/eilev_generate_action_narration.py --help` for details
+# By default, the demo uses `kpyu/eilev-blip2-opt-2.7b`, which requires about 16GB of VRAM.
+python samples/eilev_generate_action_narration.py \
+  --device cuda \
+  demo/examples/dough-mixer.mp4 \
+  "Question: What is the camera wearer doing?" \
+  "Answer: The camera wearer hits the scraper in his right hand on the dough mixer guard." \
+  demo/examples/paint.mp4 \
+  "Question: What is the camera wearer doing?" \
+  "Answer: The camera wearer paints the wall in the room with the paint brush." \
+  demo/examples/trowel.mp4 \
+  "Question: What is the camera wearer doing?" "Answer:"
+```
+
 ## Running Demo Locally
 
 ### EILEV
