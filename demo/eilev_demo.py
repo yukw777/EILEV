@@ -195,9 +195,9 @@ def construct_demo(
                 gr.Markdown(
                     """**Instructions**
 - You can compose messages arbitrarily interleaved with images, videos and texts.
-- After entering your text message in the text box, simply press enter or click the "Send" button to send it.
-- Click the "Upload" button to send an image or a video. You can upload multiple files at once.
-- When you're done composing your message, click the "Respond" button to tell the model to respond."""  # noqa: E501
+- After entering your text message in the text box, simply press enter or click the **"Send"** button to send it.
+- Click the **"Upload"** button to send an image or a video. You can upload multiple files at once.
+- When you're done composing your message, click the **"Respond"** button to tell the model to respond."""  # noqa: E501
                 )
             with gr.Column():
                 gr.Markdown(
