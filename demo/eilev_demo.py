@@ -254,6 +254,7 @@ def construct_demo(
                     minimum=20,
                     maximum=64,
                     value=32,
+                    step=1,
                     label="Max new tokens",
                     render=False,
                 )
