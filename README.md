@@ -2,7 +2,7 @@
 
 [![Project](https://img.shields.io/badge/Project-Page-20B2AA.svg)](https://yukw777.github.io/EILEV/)
 [![Paper](https://img.shields.io/badge/arXiv-Paper-red.svg)](https://arxiv.org/abs/2311.17041)
-[![Demo](https://img.shields.io/badge/Website-Demo-ff69b4.svg)](http://sled-whistler.eecs.umich.edu:7778/)
+[![Demo](https://img.shields.io/badge/Website-Demo-ff69b4.svg)](https://0610-141-212-106-177.ngrok-free.app)
 
 ![Teaser](figures/teaser.png)
 
