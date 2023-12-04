@@ -94,7 +94,7 @@ python demo/video_blip_demo.py --device cuda
 
 - [`kpyu/video-blip-opt-2.7b-ego4d`](https://huggingface.co/kpyu/video-blip-opt-2.7b-ego4d)
   - VideoBLIP initialized with [`Salesforce/blip2-opt-2.7b`](https://huggingface.co/Salesforce/blip2-opt-2.7b) and fine-tuned on Ego4D.
-- [`kpyu/video-blip-flan-t5-xl`](https://huggingface.co/kpyu/video-blip-opt-2.7b-ego4d)
+- [`kpyu/video-blip-flan-t5-xl`](https://huggingface.co/kpyu/video-blip-flan-t5-xl-ego4d)
   - VideoBLIP initialized with [`Salesforce/blip2-flan-t5-xl`](https://huggingface.co/Salesforce/blip2-flan-t5-xl) and fine-tuned on Ego4D.
 
 ## Training
