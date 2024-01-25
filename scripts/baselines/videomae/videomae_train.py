@@ -111,7 +111,6 @@ def train() -> None:
 
     model = transformers.VideoMAEForVideoClassification.from_pretrained(
         model_args.model_name_or_path,
-        low_cpu_mem_usage=True,
         ignore_mismatched_sizes=True,
         label2id=label2id,
         id2label=id2label,
