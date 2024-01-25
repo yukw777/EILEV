@@ -1,5 +1,6 @@
 import argparse
 import base64
+import math
 import os
 import subprocess
 
@@ -69,8 +70,8 @@ if args.deepspeed_stage_2:
     ).decode()
     deepspeed = f"--deepspeed {encoded_config}"
 
-gradient_accumulation_steps = (
-    args.train_batch_size // args.per_device_train_batch_size // args.num_gpus
+gradient_accumulation_steps = math.ceil(
+    args.train_batch_size / args.per_device_train_batch_size / args.num_gpus
 )
 
 
