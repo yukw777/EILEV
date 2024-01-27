@@ -54,9 +54,17 @@ def train() -> None:
     else:
         height = processor.size["height"]
         width = processor.size["width"]
+
+    def data_filter(item: dict) -> bool:
+        return (
+            item["structured_verb"] not in {"", "[other]"}
+            and item["structured_noun"] != ""
+        )
+
     train_data = FrameDataset(
         data_args.train_frames_dir,
         annotation_file=data_args.train_annotation_file,
+        data_filter=data_filter,
         transform=ApplyTransformToKey(
             "video",
             transform=Compose(
@@ -75,6 +83,7 @@ def train() -> None:
     val_data = FrameDataset(
         data_args.val_frames_dir,
         annotation_file=data_args.val_annotation_file,
+        data_filter=data_filter,
         transform=ApplyTransformToKey(
             "video",
             transform=Compose(
