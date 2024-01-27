@@ -106,11 +106,13 @@ def train() -> None:
     tmp_train_data = FrameDataset(
         data_args.train_frames_dir,
         annotation_file=data_args.train_annotation_file,
+        data_filter=data_filter,
         return_frames=False,
     )
     tmp_val_data = FrameDataset(
         data_args.val_frames_dir,
         annotation_file=data_args.val_annotation_file,
+        data_filter=data_filter,
         return_frames=False,
     )
     label_key = "structured_verb" if model_args.verb else "structured_noun"
