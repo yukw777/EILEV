@@ -62,7 +62,7 @@ def predict(
                 "ground_truth_structured_verb",
                 "predicted_structured_noun",
                 "ground_truth_structured_noun",
-                "ground_truth_narration_text",
+                "ground_truth",
             ]
         )
     else:

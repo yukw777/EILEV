@@ -33,7 +33,7 @@ if args.log_to_wandb:
             "ground_truth_structured_verb",
             "predicted_noun",
             "ground_truth_structured_noun",
-            "ground_truth_narration_text",
+            "ground_truth",
         ]
     )
 else:
