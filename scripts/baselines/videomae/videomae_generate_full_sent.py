@@ -6,7 +6,7 @@ import wandb
 from tqdm import tqdm
 from transformers import AutoTokenizer, LlamaForCausalLM
 
-from eilev.data.utils import generate_chunks
+from eilev.data.utils import clean_narration_text, generate_chunks
 
 parser = argparse.ArgumentParser()
 parser.add_argument("prediction_file")
@@ -90,7 +90,7 @@ for batch in tqdm(batches):
                 row["predicted_structured_noun"],
                 row["ground_truth_structured_noun"],
                 generated,
-                row["ground_truth_narration_text"],
+                clean_narration_text(row["ground_truth_narration_text"]),
             )
 if table is not None and run is not None:
     run.log({"generated": table})
