@@ -144,7 +144,7 @@ def predict(
                 frame_paths,
                 video_uids,
                 clip_indices,
-                predicted_verb,
+                predicted_verbs,
                 ground_truth_structured_verbs,
                 predicted_nouns,
                 ground_truth_structured_nouns,

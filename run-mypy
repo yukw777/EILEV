@@ -2,6 +2,6 @@
 set -e
 
 # This script should only really be used by pre-commit.
-poetry install --with dev --no-ansi
+poetry install --with dev --all-extras --no-ansi
 
 poetry run mypy --follow-imports=silent --ignore-missing-imports --show-column-numbers "$@"
