@@ -90,7 +90,7 @@ for batch in tqdm(batches):
                 row["predicted_structured_noun"],
                 row["ground_truth_structured_noun"],
                 generated,
-                row["ground_truth"],
+                row["ground_truth_narration_text"],
             )
 if table is not None and run is not None:
     run.log({"generated": table})
