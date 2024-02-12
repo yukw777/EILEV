@@ -298,7 +298,6 @@ if __name__ == "__main__":
     parser.add_argument("--processor", default=None)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--queue", action="store_true", default=False)
-    parser.add_argument("--concurrency-count", type=int, default=1)
     parser.add_argument("--max-size", type=int, default=10)
     args = parser.parse_args()
 
@@ -310,9 +309,5 @@ if __name__ == "__main__":
     processor = Blip2Processor.from_pretrained(args.processor)
     demo = construct_demo(model, processor, VideoPathHandler())
     if args.queue:
-        demo.queue(
-            concurrency_count=args.concurrency_count,
-            api_open=False,
-            max_size=args.max_size,
-        )
+        demo.queue(api_open=False, max_size=args.max_size)
     demo.launch()

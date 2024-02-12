@@ -231,7 +231,6 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="kpyu/video-blip-flan-t5-xl-ego4d")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--queue", action="store_true", default=False)
-    parser.add_argument("--concurrency-count", type=int, default=1)
     parser.add_argument("--max-size", type=int, default=10)
     parser.add_argument("--lavis-llm-model", default=None)
     args = parser.parse_args()
@@ -258,9 +257,5 @@ if __name__ == "__main__":
         generate_fn = partial(generate_hf, model, processor)
     demo = construct_demo(generate_fn, VideoPathHandler())
     if args.queue:
-        demo.queue(
-            concurrency_count=args.concurrency_count,
-            api_open=False,
-            max_size=args.max_size,
-        )
+        demo.queue(api_open=False, max_size=args.max_size)
     demo.launch()
