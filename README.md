@@ -11,14 +11,12 @@ EILEV is a novel training method that can elicit in-context learning in vision-l
 ## Setup
 
 ```bash
-# Install poetry https://python-poetry.org/
-curl -sSL https://install.python-poetry.org | python3 -
-
 # Clone the repository
 git clone git@github.com:yukw777/EILEV.git
 cd EILEV
 
 # Install EILEV in editable mode
+# Use of virtual environments recommended
 pip install -e .
 ```
 
