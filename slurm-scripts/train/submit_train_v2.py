@@ -32,6 +32,7 @@ parser.add_argument("--transformers_cache")
 parser.add_argument("--wandb_project", required=True)
 parser.add_argument("--resume_from_checkpoint", default=None)
 parser.add_argument("--deepspeed_stage_2", action="store_true")
+parser.add_argument("--dry-run", action="store_true")
 args = parser.parse_args()
 
 email = ""
@@ -139,4 +140,6 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     --run_name {args.run_name} \
     {resume_from_checkpoint}
 """  # noqa: E501
-subprocess.run(["sbatch"], input=script, text=True)
+print(script)
+if not args.dry_run:
+    subprocess.run(["sbatch"], input=script, text=True)
