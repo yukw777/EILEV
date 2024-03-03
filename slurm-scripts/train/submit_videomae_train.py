@@ -92,8 +92,7 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
 single_gpu = "poetry run python ../../scripts/baselines/videomae/videomae_train.py \\"
 
 job_name = (
-    "train-"
-    + args.job_name_prefix
+    +args.job_name_prefix
     + "-"
     + args.model.split("/")[1]
     + ("-verb" if args.verb else "-noun")
