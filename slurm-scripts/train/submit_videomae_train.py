@@ -93,6 +93,7 @@ single_gpu = "poetry run python ../../scripts/baselines/videomae/videomae_train.
 
 job_name = (
     args.model.split("/")[1]
+    + "-"
     + args.job_name_suffix
     + ("-verb" if args.verb else "-noun")
 )
