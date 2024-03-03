@@ -25,6 +25,7 @@ parser.add_argument("--num_train_epochs", type=int, default=5)
 parser.add_argument("--email")
 parser.add_argument("--transformers_cache")
 parser.add_argument("--wandb_project", required=True)
+parser.add_argument("--job_name_prefix", default="")
 parser.add_argument("--resume_from_checkpoint", default=None)
 parser.add_argument("--deepspeed_stage_2", action="store_true")
 parser.add_argument("--dry-run", action="store_true")
@@ -90,7 +91,13 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
 
 single_gpu = "poetry run python ../../scripts/baselines/videomae/videomae_train.py \\"
 
-job_name = "train-" + args.model.split("/")[1] + ("-verb" if args.verb else "-noun")
+job_name = (
+    "train-"
+    + args.job_name_prefix
+    + "-"
+    + args.model.split("/")[1]
+    + ("-verb" if args.verb else "-noun")
+)
 output_dir = os.path.join(args.output_dir, job_name)
 
 script = rf"""#!/bin/bash
