@@ -21,6 +21,7 @@ parser.add_argument(
 )
 parser.add_argument("--val_num_in_context_examples_per_sample", type=int, required=True)
 parser.add_argument("--verb_noun_ratio", type=float, required=True)
+parser.add_argument("--random_in_context_examples", type=bool, default=False)
 parser.add_argument("--dataloader_num_workers", type=int, required=True)
 parser.add_argument("--train_batch_size", type=int, required=True)
 parser.add_argument("--per_device_train_batch_size", type=int, required=True)
@@ -114,6 +115,7 @@ srun --cpus-per-task {args.dataloader_num_workers} poetry run torchrun --nnodes=
     --train_num_in_context_examples_per_sample {args.train_num_in_context_examples_per_sample} \
     --val_num_in_context_examples_per_sample {args.val_num_in_context_examples_per_sample} \
     --verb_noun_ratio {args.verb_noun_ratio} \
+    --random_in_context_examples {args.random_in_context_examples } \
     --train_frames_dir {args.train_frames_dir} \
     {train_annotation_file} \
     --val_frames_dir {args.val_frames_dir} \

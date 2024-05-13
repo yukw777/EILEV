@@ -92,6 +92,7 @@ class DataArguments:
     verb_noun_ratio: float
     train_annotation_file: str = None  # type: ignore
     val_annotation_file: str = None  # type: ignore
+    random_in_context_examples: bool = False
 
 
 @dataclass
@@ -132,6 +133,7 @@ def train() -> None:
         annotation_file=data_args.train_annotation_file,
         num_in_context_examples_per_sample=data_args.train_num_in_context_examples_per_sample,  # noqa: E501
         verb_noun_ratio=data_args.verb_noun_ratio,
+        random_in_context_examples=data_args.random_in_context_examples,
         transform=Preprocessor(
             processor.tokenizer,
             model.config.num_query_tokens,
@@ -170,6 +172,7 @@ def train() -> None:
         in_context_example_annotation_file=data_args.train_annotation_file,
         num_in_context_examples_per_sample=data_args.val_num_in_context_examples_per_sample,  # noqa: E501
         verb_noun_ratio=data_args.verb_noun_ratio,
+        random_in_context_examples=data_args.random_in_context_examples,
         transform=Preprocessor(
             processor.tokenizer,
             model.config.num_query_tokens,
