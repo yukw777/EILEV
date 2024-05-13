@@ -86,6 +86,7 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
         verb_noun_ratio: float = 0.5,
         transform: Callable[[dict], Any] | None = None,
         return_frames: bool = True,
+        random_in_context_examples: bool = False,
     ) -> None:
         """
         :param frames_dir: path to dir that contains extracted frames.
@@ -105,10 +106,13 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
         :param verb_noun_ratio: target verb/noun ratio for in-context examples
         :param transform: transform function to be called for each datapoint
         :param return_frames: whether to return frame data for each datapoint or not
+        :param random_in_context_examples: whether to sample random in-context examples
+            or not
         """
         self.num_in_context_examples_per_sample = num_in_context_examples_per_sample
         self.verb_noun_ratio = verb_noun_ratio
         self.return_frames = return_frames
+        self.random_in_context_examples = random_in_context_examples
         self._dataset = FrameDataset(
             frames_dir=frames_dir,
             annotation_file=annotation_file,
@@ -125,22 +129,23 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
                 return_frames=return_frames,
             )
 
-        # put datapoints into buckets based on their structured verbs and nouns
         self.structured_verb_buckets: dict[str, set[int]] = defaultdict(set)
         self.structured_noun_buckets: dict[str, set[int]] = defaultdict(set)
-        for i, datapoint in enumerate(self._in_context_dataset.data):
-            if datapoint["structured_verb"] not in {"", "[other]"}:
-                # NOTE: [other] is a catch-all verb in Ego4D. For these instances,
-                # we just sample from the whole dataset.
-                self.structured_verb_buckets[datapoint["structured_verb"]].add(i)
-            if datapoint["structured_noun"] != "":
-                self.structured_noun_buckets[datapoint["structured_noun"]].add(i)
+        if not self.random_in_context_examples:
+            # put datapoints into buckets based on their structured verbs and nouns
+            for i, datapoint in enumerate(self._in_context_dataset.data):
+                if datapoint["structured_verb"] not in {"", "[other]"}:
+                    # NOTE: [other] is a catch-all verb in Ego4D. For these instances,
+                    # we just sample from the whole dataset.
+                    self.structured_verb_buckets[datapoint["structured_verb"]].add(i)
+                if datapoint["structured_noun"] != "":
+                    self.structured_noun_buckets[datapoint["structured_noun"]].add(i)
 
         self._transform = transform
 
-    def __getitem__(self, index: int) -> dict[str, Any]:
-        datapoint = self._dataset[index]
-
+    def _sample_in_context_examples_based_on_structured_verb_noun(
+        self, datapoint: dict[str, Any], index: int
+    ) -> set[int]:
         verb_bucket: set[int] = set()
         for i in self.structured_verb_buckets.get(datapoint["structured_verb"], set()):
             if self.in_context_examples_from_main_dataset and i == index:
@@ -225,14 +230,40 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
                 rest.add(i)
             examples |= _sample(rest, num_additional_examples)
 
-        # shuffle the in-context examples and append the main datapoint in the end
-        item = {
-            "items": [
-                self._in_context_dataset[i]
-                for i in random.sample(examples, len(examples))
-            ]
-            + [datapoint]
-        }
+        return examples
+
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        datapoint = self._dataset[index]
+
+        if self.random_in_context_examples:
+            examples = set(
+                random.sample(
+                    [
+                        i
+                        for i in range(len(self._in_context_dataset))
+                        if not self.in_context_examples_from_main_dataset or i != index
+                    ],
+                    self.num_in_context_examples_per_sample,
+                )
+            )
+            item = {
+                "items": [self._in_context_dataset[i] for i in examples] + [datapoint]
+            }
+        else:
+            examples = self._sample_in_context_examples_based_on_structured_verb_noun(
+                datapoint, index
+            )
+
+            item = {
+                "items": [
+                    self._in_context_dataset[i]
+                    # shuffle the in-context examples and
+                    # append the main datapoint in the end
+                    for i in random.sample(examples, len(examples))
+                ]
+                + [datapoint]
+            }
+
         if self._transform is not None:
             item = self._transform(item)
         return item
