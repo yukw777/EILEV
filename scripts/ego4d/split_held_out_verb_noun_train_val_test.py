@@ -67,15 +67,11 @@ common_pairs, rare_pairs = split_common_rare(
     verb_noun_pair_counter, args.num_common_action, args.common_percent
 )
 
-if args.num_common_action is not None:
-    top_k = args.num_common_action
-else:
-    top_k = 10
 print(f"Total # of common pairs: {len(common_pairs)}")
-print(f"Top {top_k} common pairs: {common_pairs[:top_k]}")
+print(f"Top 10 common pairs: {common_pairs[:10]}")
 print()
 print(f"Total # of rare pairs: {len(rare_pairs)}")
-print(f"Top {top_k} rare pairs: {rare_pairs[:top_k]}")
+print(f"Top 10 rare pairs: {rare_pairs[:10]}")
 print()
 
 train_val: list[dict] = []
