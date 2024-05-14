@@ -1,8 +1,8 @@
 import argparse
 import csv
-import os
 import random
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 
@@ -105,22 +105,22 @@ print(
     f"{len(narrated_actions) - len(train)-len(val)-len(test)}"
 )
 
+output_path = Path(args.split_output_path)
+output_path.mkdir(parents=True, exist_ok=True)
 columns = list(train[0].keys())
-with open(
-    os.path.join(args.split_output_path, "train.csv"), "w", newline=""
-) as train_f:
+with open(output_path / "train.csv", "w", newline="") as train_f:
     csvwriter = csv.DictWriter(train_f, columns)
     csvwriter.writeheader()
     for narrated_action in train:
         csvwriter.writerow(narrated_action)
 
-with open(os.path.join(args.split_output_path, "val.csv"), "w", newline="") as val_f:
+with open(output_path / "val.csv", "w", newline="") as val_f:
     csvwriter = csv.DictWriter(val_f, columns)
     csvwriter.writeheader()
     for narrated_action in val:
         csvwriter.writerow(narrated_action)
 
-with open(os.path.join(args.split_output_path, "test.csv"), "w", newline="") as test_f:
+with open(output_path / "test.csv", "w", newline="") as test_f:
     csvwriter = csv.DictWriter(test_f, columns)
     csvwriter.writeheader()
     for narrated_action in test:
