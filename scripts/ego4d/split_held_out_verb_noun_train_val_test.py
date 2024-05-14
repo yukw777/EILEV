@@ -11,9 +11,15 @@ parser.add_argument("train_narrated_actions")
 parser.add_argument("val_narrated_actions")
 parser.add_argument("test_narrated_actions")
 parser.add_argument("split_output_path")
-parser.add_argument("common_percent", type=float)
+parser.add_argument("train_val_split", type=float)
+parser.add_argument("--num_common_action", type=int)
+parser.add_argument("--common_percent", type=float)
 parser.add_argument("--seed", type=int, default=42)
 args = parser.parse_args()
+
+if args.num_common_action is not None and args.common_percent is not None:
+    print("Only one of --num_common_action and --common_percent can be set.")
+    exit(1)
 
 random.seed(args.seed)
 
@@ -36,14 +42,20 @@ print()
 
 
 def split_common_rare(
-    counter: Counter, common_percent: float
+    counter: Counter, num_common_action: int | None, common_percent: float | None
 ) -> tuple[list[str], list[str]]:
     items, counts = zip(*[(item, count) for item, count in counter.most_common()])
 
-    cumulative_sum = np.cumsum(counts)
-    cut_off = np.where(cumulative_sum >= common_percent * cumulative_sum[-1])[0][0]
+    if num_common_action is not None:
+        cut_off = num_common_action
+    else:
+        assert common_percent is not None
+        cumulative_sum = np.cumsum(counts)
+        cut_off = (
+            np.where(cumulative_sum >= common_percent * cumulative_sum[-1])[0][0] + 1
+        )
 
-    return items[: cut_off + 1], items[cut_off + 1 :]
+    return items[:cut_off], items[cut_off:]
 
 
 verb_noun_pair_counter = Counter(
@@ -52,14 +64,18 @@ verb_noun_pair_counter = Counter(
     if narrated_action["structured_verb"] and narrated_action["structured_noun"]
 )
 common_pairs, rare_pairs = split_common_rare(
-    verb_noun_pair_counter, args.common_percent
+    verb_noun_pair_counter, args.num_common_action, args.common_percent
 )
 
+if args.num_common_action is not None:
+    top_k = args.num_common_action
+else:
+    top_k = 10
 print(f"Total # of common pairs: {len(common_pairs)}")
-print(f"Top 10 common pairs: {common_pairs[:10]}")
+print(f"Top {top_k} common pairs: {common_pairs[:top_k]}")
 print()
 print(f"Total # of rare pairs: {len(rare_pairs)}")
-print(f"Top 10 rare pairs: {rare_pairs[:10]}")
+print(f"Top {top_k} rare pairs: {rare_pairs[:top_k]}")
 print()
 
 train_val: list[dict] = []
@@ -81,7 +97,7 @@ for narrated_action in narrated_actions:
 random.shuffle(train_val)
 
 # split train val
-split_index = round(len(train_val) * args.common_percent)
+split_index = round(len(train_val) * args.train_val_split)
 train = train_val[:split_index]
 val = train_val[split_index:]
 
