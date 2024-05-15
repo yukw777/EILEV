@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("annotation")
 parser.add_argument("annotation_with_full_sent")
 parser.add_argument("--device", default="cpu")
-parser.add_argument("--model", default="NousResearch/Llama-2-7b-chat-hf")
+parser.add_argument("--model", default="meta-llama/Llama-2-7b-chat-hf")
 parser.add_argument("--batch_size", type=int, default=256)
 args = parser.parse_args()
 
