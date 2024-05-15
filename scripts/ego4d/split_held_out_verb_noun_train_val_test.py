@@ -7,9 +7,7 @@ from pathlib import Path
 import numpy as np
 
 parser = argparse.ArgumentParser()
-parser.add_argument("train_narrated_actions")
-parser.add_argument("val_narrated_actions")
-parser.add_argument("test_narrated_actions")
+parser.add_argument("narrated_action_files", nargs="+")
 parser.add_argument("split_output_path")
 parser.add_argument("train_val_split", type=float)
 parser.add_argument("--num_common_action", type=int)
@@ -33,9 +31,8 @@ def read_narrated_actions(csv_file: str, narrated_actions: list[dict]) -> None:
         narrated_actions.extend(csvreader)
 
 
-read_narrated_actions(args.train_narrated_actions, narrated_actions)
-read_narrated_actions(args.val_narrated_actions, narrated_actions)
-read_narrated_actions(args.test_narrated_actions, narrated_actions)
+for narrated_action_file in args.narrated_action_files:
+    read_narrated_actions(narrated_action_file, narrated_actions)
 
 print(f"Total # of narrated actions: {len(narrated_actions)}")
 print()
