@@ -1,6 +1,7 @@
 import argparse
 import csv
 
+import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, LlamaForCausalLM
 
@@ -10,6 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("annotation")
 parser.add_argument("annotation_with_std_sent")
 parser.add_argument("--device", default="cpu")
+parser.add_argument("--dtype")
 parser.add_argument("--model", default="meta-llama/Llama-2-7b-chat-hf")
 parser.add_argument("--batch_size", type=int, default=256)
 args = parser.parse_args()
@@ -17,7 +19,14 @@ args = parser.parse_args()
 tokenizer = AutoTokenizer.from_pretrained(args.model, padding_side="left")
 if tokenizer.pad_token is None:
     tokenizer.pad_token = "[PAD]"
-model = LlamaForCausalLM.from_pretrained(args.model).to(args.device)
+dtype_dict = {
+    "fp32": torch.float32,
+    "fp16": torch.float16,
+    "bfloat16": torch.bfloat16,
+}
+model = LlamaForCausalLM.from_pretrained(args.model).to(
+    args.device, dtype_dict[args.dtype]
+)
 
 prompt_template = """Use the verb and noun to generate a sentence using "the camera wearer" as the subject.
 
@@ -50,7 +59,7 @@ batches = list(generate_chunks(rows, args.batch_size))
 newline_token_id = tokenizer.convert_tokens_to_ids("<0x0A>")
 with open(args.annotation_with_std_sent, "w", newline="") as ann_full_sent_f:
     csv_writer = csv.DictWriter(
-        ann_full_sent_f, list(rows[0].keys()) + ["full_sent_narration"]
+        ann_full_sent_f, list(k for k in rows[0].keys() if k not in {"verb", "noun"})
     )
     csv_writer.writeheader()
     for batch in tqdm(batches):
@@ -62,7 +71,9 @@ with open(args.annotation_with_std_sent, "w", newline="") as ann_full_sent_f:
         for row, full_sent_narration, prompt in zip(
             batch, tokenizer.batch_decode(outputs, skip_special_tokens=True), prompts
         ):
-            row["narration_text"] = full_sent_narration[len(prompt) :].strip()
+            narration_text = full_sent_narration[len(prompt) :].strip()
+            narration_text = narration_text.split(".", maxsplit=1)[0] + "."
+            row["narration_text"] = narration_text
             del row["verb"]
             del row["noun"]
         csv_writer.writerows(batch)
