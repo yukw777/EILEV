@@ -93,6 +93,7 @@ class DataArguments:
     train_annotation_file: str = None  # type: ignore
     val_annotation_file: str = None  # type: ignore
     random_in_context_examples: bool = False
+    train_target_dataset_len: int = None  # type: ignore
 
 
 @dataclass
@@ -134,6 +135,7 @@ def train() -> None:
         num_in_context_examples_per_sample=data_args.train_num_in_context_examples_per_sample,  # noqa: E501
         verb_noun_ratio=data_args.verb_noun_ratio,
         random_in_context_examples=data_args.random_in_context_examples,
+        target_dataset_len=data_args.train_target_dataset_len,
         transform=Preprocessor(
             processor.tokenizer,
             model.config.num_query_tokens,
