@@ -87,6 +87,7 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
         transform: Callable[[dict], Any] | None = None,
         return_frames: bool = True,
         random_in_context_examples: bool = False,
+        target_dataset_len: int | None = None,
     ) -> None:
         """
         :param frames_dir: path to dir that contains extracted frames.
@@ -108,16 +109,48 @@ class FrameInterleavedDataset(Dataset[dict[str, Any]]):
         :param return_frames: whether to return frame data for each datapoint or not
         :param random_in_context_examples: whether to sample random in-context examples
             or not
+        :param target_dataset_len: if given, we upsample datapoints based on their
+            verb/noun classes to match target_dataset_len
         """
         self.num_in_context_examples_per_sample = num_in_context_examples_per_sample
         self.verb_noun_ratio = verb_noun_ratio
         self.return_frames = return_frames
         self.random_in_context_examples = random_in_context_examples
+        self.target_dataset_len = target_dataset_len
         self._dataset = FrameDataset(
             frames_dir=frames_dir,
             annotation_file=annotation_file,
             return_frames=return_frames,
         )
+        if self.target_dataset_len is not None and self.target_dataset_len > len(
+            self._dataset
+        ):
+            action_buckets: dict[tuple[str, str], set[int]] = defaultdict(set)
+            for i, datapoint in enumerate(self._dataset.data):
+                action_buckets[
+                    (datapoint["structured_verb"], datapoint["structured_noun"])
+                ].add(i)
+            num_to_sample_per_action = (
+                self.target_dataset_len - len(self._dataset)
+            ) // len(action_buckets)
+            for _, idx in action_buckets.items():
+                if len(self._dataset) == self.target_dataset_len:
+                    break
+                num_to_sample = max(
+                    num_to_sample_per_action,
+                    len(self._dataset) - self.target_dataset_len,
+                )
+                sampled_idx: list[int] = []
+                while len(sampled_idx) < num_to_sample:
+                    curr_num_to_sample = num_to_sample - len(sampled_idx)
+                    if len(idx) >= curr_num_to_sample:
+                        sampled_idx.extend(random.sample(idx, curr_num_to_sample))
+                    else:
+                        sampled_idx.extend(idx)
+                for i in sampled_idx:
+                    sampled = self._dataset.data[i]
+                    self._dataset.data.append(sampled)
+                    self._dataset.dict_data[sampled["frame_path"]] = sampled
         if in_context_example_frames_dir is None:
             self.in_context_examples_from_main_dataset = True
             self._in_context_dataset = self._dataset
