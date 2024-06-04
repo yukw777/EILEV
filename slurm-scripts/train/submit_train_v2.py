@@ -16,7 +16,8 @@ parser.add_argument("--transformers_cache")
 parser.add_argument("--wandb_project")
 parser.add_argument("--deepspeed_stage_2", action="store_true")
 parser.add_argument("--dry_run", action="store_true")
-args, train_args = parser.parse_known_args()
+parser.add_argument("train_args", nargs=argparse.REMAINDER)
+args = parser.parse_args()
 
 email = ""
 if args.email is not None:
@@ -67,7 +68,7 @@ gradient_accumulation_steps = (
     args.train_batch_size // args.per_device_train_batch_size // args.num_gpus
 )
 
-train_args_str = " ".join(train_args)
+train_args_str = " ".join(args.train_args[1:])
 
 script = rf"""#!/bin/bash
 
