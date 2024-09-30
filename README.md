@@ -1,4 +1,4 @@
-# EILEV: Efficient In-Context Learning in Vision-Language Models for Egocentric Videos
+# EILeV: Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties (EMNLP 2024)
 
 [![Project](https://img.shields.io/badge/Project-Page-20B2AA.svg)](https://yukw777.github.io/EILEV/)
 [![Paper](https://img.shields.io/badge/arXiv-Paper-red.svg)](https://arxiv.org/abs/2311.17041)
@@ -6,7 +6,7 @@
 
 ![Teaser](figures/teaser.png)
 
-EILEV is a novel training method that can elicit in-context learning in vision-language models (VLMs) for egocentric videos without requiring massive, naturalistic egocentric video datasets. It is an extension to the preliminary work done in [VideoBLIP](https://github.com/yukw777/VideoBLIP), which contains models trained using EILEV with no in-context examples.
+EILeV (**E**mergent **I**n-context **Le**arning on **V**ideos) is a novel training paradigm that induces in-context learning over video and text in vision-language models (VLMs) by capturing key properties of pre-training data without requiring massive, naturalistic egocentric video datasets. It is an extension to the preliminary work done in [VideoBLIP](https://github.com/yukw777/VideoBLIP), which contains models trained using EILeV with no in-context examples.
 
 ## Setup
 
@@ -22,7 +22,7 @@ pip install -e .
 
 ## Running Sample Scripts
 
-### EILEV
+### EILeV
 
 ```bash
 # Run `python samples/eilev_generate_action_narration.py --help` for details
@@ -52,7 +52,7 @@ python samples/video_blip_generate_action_narration.py \
 
 ## Running Demo Locally
 
-### EILEV
+### EILeV
 
 ```bash
 # Install extra packages
@@ -81,12 +81,12 @@ python demo/video_blip_demo.py --device cuda
 
 ## Pretrained Weights
 
-### EILEV
+### EILeV
 
 - [`kpyu/eilev-blip2-opt-2.7b`](https://huggingface.co/kpyu/eilev-blip2-opt-2.7b)
-  - [`Salesforce/blip2-opt-2.7b`](https://huggingface.co/Salesforce/blip2-opt-2.7b) trained using EILEV on on Ego4D.
+  - [`Salesforce/blip2-opt-2.7b`](https://huggingface.co/Salesforce/blip2-opt-2.7b) trained using EILeV on on Ego4D.
 - [`kpyu/eilev-blip2-flan-t5-xl`](https://huggingface.co/kpyu/eilev-blip2-flan-t5-xl)
-  - [`Salesforce/blip2-flan-t5-xl`](https://huggingface.co/Salesforce/blip2-flan-t5-xl) trained using EILEV on Ego4D.
+  - [`Salesforce/blip2-flan-t5-xl`](https://huggingface.co/Salesforce/blip2-flan-t5-xl) trained using EILeV on Ego4D.
 
 ### VideoBLIP
 
@@ -284,7 +284,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 git clone git@github.com:yukw777/EILEV.git
 cd EILEV
 
-# Install EILEV using poetry
+# Install EILeV using poetry
 # Note: if you notice "keyring" related error messages or poetry hanging,
 # pelase export the following environment variable.
 # More info can be found here: https://github.com/python-poetry/poetry/issues/8623
@@ -301,7 +301,7 @@ pre-commit install
 pytest
 ```
 
-## Citing EILEV
+## Citing EILeV
 
 ```
 @article{yu2023efficient,
