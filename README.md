@@ -314,4 +314,4 @@ pytest
 
 ## Acknowledgements
 
-We thank [Shane Storks](https://shanestorks.com/) for his valuable insight and comments. This work has been supported by the Defense Advanced Research Projects Agency (DARPA) under the PTG Program, Contract No. HR00112220003. The views expressed are those of the authors and do not necessarily reflect the views of DARPA.
+This work was supported in part by the DARPA PTG program HR00112220003. We would like to thank the entire MSPR team for their helpful discussion and feedback. We would also like to thank the anonymous reviewers for their valuable comments and suggestions.
