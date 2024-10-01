@@ -304,11 +304,14 @@ pytest
 ## Citing EILeV
 
 ```
-@article{yu2023efficient,
-  title={Efficient In-Context Learning in Vision-Language Models for Egocentric Videos},
-  author={Yu, Keunwoo Peter and Zhang, Zheyuan and Hu, Fengyuan and Chai, Joyce},
-  journal={arXiv preprint arXiv:2311.17041},
-  year={2023}
+@misc{yu2024elicitingincontextlearningvisionlanguage,
+      title={Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties},
+      author={Keunwoo Peter Yu and Zheyuan Zhang and Fengyuan Hu and Shane Storks and Joyce Chai},
+      year={2024},
+      eprint={2311.17041},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2311.17041},
 }
 ```
 
