@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="description"
-        content="Efficient In-Context Learning in Vision-Language Models for Egocentric Videos. (EILEV)">
+        content="EILeV: Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties (EMNLP 2024)">
   <meta name="keywords" content="Multimodal, Vision-Language Models, In-Context learning, Videos">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Efficient In-Context Learning in Vision-Language Models for Egocentric Videos</title>
+  <title>EILeV: Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties (EMNLP 2024)</title>
 
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
@@ -61,7 +61,7 @@
     <div class="container is-max-desktop">
       <div class="columns is-centered">
         <div class="column has-text-centered">
-          <h1 class="title is-1 publication-title">Efficient In-Context Learning in Vision-Language Models for Egocentric Videos</h1>
+          <h1 class="title is-1 publication-title">EILeV: Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties (EMNLP 2024)</h1>
           <div class="is-size-5 publication-authors">
             <span class="author-block">
               <a href="https://sled.eecs.umich.edu/author/keunwoo-peter-yu/">Keunwoo Peter Yu</a>,</span>
@@ -71,12 +71,17 @@
               <a href="https://sites.google.com/umich.edu/hufy">Fengyuan Hu</a>,
             </span>
             <span class="author-block">
+              <a href="https://www.shanestorks.com/">Shane Storks</a>,
+            </span>
+            <span class="author-block">
               <a href="https://web.eecs.umich.edu/~chaijy/">Joyce Chai</a>,
             </span>
           </div>
 
           <div class="is-size-5 publication-authors">
-            <span class="author-block">University of Michigan</span>
+            <span class="author-block">
+              <a href="https://sled.eecs.umich.edu/">SLED Research Lab @ University of Michigan</a>
+            </span>
           </div>
 
           <div class="column has-text-centered">
@@ -132,7 +137,7 @@
               </span> -->
               <!-- Demo Link. -->
               <span class="link-block">
-                <a href="https://4e8a-141-212-106-177.ngrok-free.app"
+                <a href="https://2bf4-141-212-106-177.ngrok-free.app"
                    class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">
                   <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M256 0c-25.3 0-47.2 14.7-57.6 36c-7-2.6-14.5-4-22.4-4c-35.3 0-64 28.7-64 64V261.5l-2.7-2.7c-25-25-65.5-25-90.5 0s-25 65.5 0 90.5L106.5 437c48 48 113.1 75 181 75H296h8c1.5 0 3-.1 4.5-.4c91.7-6.2 165-79.4 171.1-171.1c.3-1.5 .4-3 .4-4.5V160c0-35.3-28.7-64-64-64c-5.5 0-10.9 .7-16 2V96c0-35.3-28.7-64-64-64c-7.9 0-15.4 1.4-22.4 4C303.2 14.7 281.3 0 256 0zM240 96.1c0 0 0-.1 0-.1V64c0-8.8 7.2-16 16-16s16 7.2 16 16V95.9c0 0 0 .1 0 .1V232c0 13.3 10.7 24 24 24s24-10.7 24-24V96c0 0 0 0 0-.1c0-8.8 7.2-16 16-16s16 7.2 16 16v55.9c0 0 0 .1 0 .1v80c0 13.3 10.7 24 24 24s24-10.7 24-24V160.1c0 0 0-.1 0-.1c0-8.8 7.2-16 16-16s16 7.2 16 16V332.9c-.1 .6-.1 1.3-.2 1.9c-3.4 69.7-59.3 125.6-129 129c-.6 0-1.3 .1-1.9 .2H296h-8.5c-55.2 0-108.1-21.9-147.1-60.9L52.7 315.3c-6.2-6.2-6.2-16.4 0-22.6s16.4-6.2 22.6 0L119 336.4c6.9 6.9 17.2 8.9 26.2 5.2s14.8-12.5 14.8-22.2V96c0-8.8 7.2-16 16-16c8.8 0 16 7.1 16 15.9V232c0 13.3 10.7 24 24 24s24-10.7 24-24V96.1z"/></svg>
@@ -156,12 +161,12 @@
             class="interpolation-image"
             alt="Teaser image for the paper"/>
       <h2 class="subtitle">
-        \(\mathbb{EILEV}\) elicits in-context learning capabilities in VLMs for egocentric videos 
-        by allowing the model to handle data interleaved with videos and texts, and training it on data 
-        with clusters of similar verbs and nouns, a long tail distribution of infrequent items and both 
-        homonyms and synonyms. The resulting model not only generates more accurate action narrations 
-        than other VLMs with more parameters and training data, but also generalizes to novel, rare actions 
-        via in-context learning.
+        \(\textbf{EILeV}\) (\(\textbf{E}\)mergent \(\textbf{I}\)n-context \(\textbf{Le}\)arning on \(\textbf{V}\)ideos) 
+        is a novel training paradigm that induces in-context learning over video and text 
+        in vision-language models (VLMs) by capturing key properties of pre-training data. 
+        The resulting model not only generates more accurate action narrations 
+        than other VLMs with more parameters and training data, but also generalizes to novel, rare and 
+        out-of-distribution actions via in-context learning.
       </h2>
     </div>
   </div>
@@ -171,11 +176,14 @@
 <section class="section" id="BibTeX">
   <div class="container is-max-desktop content">
     <h2 class="title">BibTeX</h2>
-    <pre><code>@article{yu2023efficient,
-  title={Efficient In-Context Learning in Vision-Language Models for Egocentric Videos},
-  author={Yu, Keunwoo Peter and Zhang, Zheyuan and Hu, Fengyuan and Chai, Joyce},
-  journal={arXiv preprint arXiv:2311.17041},
-  year={2023}
+    <pre><code>@misc{yu2024elicitingincontextlearningvisionlanguage,
+  title={Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties}, 
+  author={Keunwoo Peter Yu and Zheyuan Zhang and Fengyuan Hu and Shane Storks and Joyce Chai},
+  year={2024},
+  eprint={2311.17041},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2311.17041}, 
 }</code></pre>
   </div>
 </section>
@@ -185,7 +193,7 @@
   <div class="container is-max-desktop content">
     <h2 class="title">Acknowledgement</h2>
     <p>
-      We thank <a href="https://shanestorks.com/">Shane Storks</a> for his valuable insight and comments. This work has been supported by the Defense Advanced Research Projects Agency (DARPA) under the PTG Program, Contract No. HR00112220003. The views expressed are those of the authors and do not necessarily reflect the views of DARPA.
+      This work was supported in part by the DARPA PTG program HR00112220003. We would like to thank the entire MSPR team for their helpful discussion and feedback. We would also like to thank the anonymous reviewers for their valuable comments and suggestions.
     </p>
   </div>
 </section>
