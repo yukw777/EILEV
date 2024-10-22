@@ -6,7 +6,7 @@
 
 ![Teaser](figures/teaser.png)
 
-EILeV (**E**mergent **I**n-context **Le**arning on **V**ideos) is a novel training paradigm that induces in-context learning over video and text in vision-language models (VLMs) by capturing key properties of pre-training data without requiring massive, naturalistic egocentric video datasets. It is an extension to the preliminary work done in [VideoBLIP](https://github.com/yukw777/VideoBLIP), which contains models trained using EILeV with no in-context examples.
+EILeV (**E**mergent **I**n-context **Le**arning on **V**ideos) is a novel training paradigm that induces in-context learning over video and text in vision-language models (VLMs) by capturing key properties of pre-training data without requiring massive, naturalistic video datasets. It is an extension to the preliminary work done in [VideoBLIP](https://github.com/yukw777/VideoBLIP), which contains models trained using EILeV with no in-context examples.
 
 ## Setup
 
