@@ -304,14 +304,11 @@ pytest
 ## Citing EILeV
 
 ```
-@misc{yu2024elicitingincontextlearningvisionlanguage,
-      title={Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties},
-      author={Keunwoo Peter Yu and Zheyuan Zhang and Fengyuan Hu and Shane Storks and Joyce Chai},
-      year={2024},
-      eprint={2311.17041},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2311.17041},
+@inproceedings{yu2024eliciting,
+    title={Eliciting In-Context Learning in Vision-Language Models for Videos Through Curated Data Distributional Properties},
+    author={Keunwoo Peter Yu and Zheyuan Zhang and Fengyuan Hu and Shane Storks and Joyce Chai},
+    year={2024},
+    booktitle={Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing}
 }
 ```
 
